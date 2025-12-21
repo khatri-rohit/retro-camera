@@ -39,7 +39,25 @@ export default function InstantCameraCard() {
     ctx.drawImage(videoRef.current, 0, 0);
     canvas.toBlob((blob) => {
       if (!blob) return;
-      setPhotos(prev => [...prev, URL.createObjectURL(blob)]);
+      const len = photos.length;
+
+      setPhotos(prev => [...prev, {
+        blob,
+        previewURL: URL.createObjectURL(blob)
+      }]);
+
+      editCapturedPhoto(blob).then((image) => {
+        console.log(image);
+        setPhotos([...photos.slice(0, len), {
+          blob,
+          previewURL: image
+        }]);
+        setLoading(false);
+      }).catch((err) => {
+        console.log(err);
+        setLoading(false);
+      })
+
     }, "image/png");
   };
 
@@ -50,31 +68,29 @@ export default function InstantCameraCard() {
   return (
     <motion.div
       ref={dragContainer}
-      className=" relative flex items-center justify-center h-screen no-select bg-neutral-100 overflow-hidden"
+      className="relative flex items-center justify-center h-screen no-select overflow-hidden"
     >
       {/* Camera */}
+<div className="relative w-[29.8vw] top-10 left-10 flex">
       <video
         ref={videoRef}
         autoPlay
         playsInline
-        className="absolute inset-y-10 -inset-x-10 object-cover"
-        onDragOver={(e) => {
-          e.preventDefault()
-          e.stopPropagation()
-          e.dataTransfer.dropEffect = 'copy'
-          console.log(e.dataTransfer.dropEffect)
-          console.log(e.dataTransfer.effectAllowed)
-        }}
-      />
+          className="absolute top-[60.1%] right-2.5 -translate-y-1/2 -translate-x-1/2 object-cover"
+        />
+        <img src="/camera.png" loading="eager" alt="camera"
+          className="object-cover z-50"
+        />
+      </div>
 
-      {!isCameraVisible && (
+      {/* {!isCameraVisible && ( */}
         <button
           onClick={startCamera}
           className="absolute top-6 left-6 z-10 px-4 py-2 bg-black text-white"
         >
           Enable Camera
         </button>
-      )}
+      {/* )} */}
 
       <button
         onClick={capture}
