@@ -1,103 +1,204 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useEffect, useRef, useState } from "react";
+import { motion } from "motion/react";
+import { FlipHorizontal2 } from "lucide-react";
+
+export default function InstantCameraCard() {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const dragContainer = useRef<HTMLDivElement>(null)
+
+  const [isCameraVisible, setCameraVisible] = useState(false)
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [flipped, setFlipped] = useState(false);
+  const [message, setMessage] = useState("");
+
+  // Ask camera permission
+  const startCamera = async () => {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { width: 400, height: 400 },
+    });
+    if (videoRef.current) {
+      videoRef.current.srcObject = stream;
+      setCameraVisible(true)
+    }
+  };
+
+  // Capture image
+  const capture = () => {
+    if (!videoRef.current || !canvasRef.current) return;
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    canvas.width = videoRef.current.videoWidth;
+    canvas.height = videoRef.current.videoHeight;
+
+    ctx.drawImage(videoRef.current, 0, 0);
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      setPhotos(prev => [...prev, URL.createObjectURL(blob)]);
+    }, "image/png");
+  };
+
+  useEffect(() => {
+    startCamera()
+  }, [])
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <motion.div
+      ref={dragContainer}
+      className=" relative flex items-center justify-center h-screen no-select bg-neutral-100 overflow-hidden"
+    >
+      {/* Camera */}
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        className="absolute inset-y-10 -inset-x-10 object-cover"
+        onDragOver={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          e.dataTransfer.dropEffect = 'copy'
+          console.log(e.dataTransfer.dropEffect)
+          console.log(e.dataTransfer.effectAllowed)
+        }}
+      />
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+      {!isCameraVisible && (
+        <button
+          onClick={startCamera}
+          className="absolute top-6 left-6 z-10 px-4 py-2 bg-black text-white"
+        >
+          Enable Camera
+        </button>
+      )}
+
+      <button
+        onClick={capture}
+        className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 px-6 py-3 bg-white text-black rounded-full"
+      >
+        Capture
+      </button>
+
+      {/* Hidden canvas */}
+      <canvas ref={canvasRef} className="hidden" />
+
+      {/* Instant Card */}
+      {photos.length > 0 ? (
+        photos.map((photo) => (
+          <motion.div
+            key={photo}
+            drag
+            dragConstraints={{ left: 0, right: 300 }}
+            dragMomentum={false}
+            className="relative w-[280px] h-[360px] cursor-grab perspective-distant"
+            animate={{ rotateY: flipped ? 180 : 0 }}
+            transition={{ duration: 0.6, ease: "easeInOut" }}
+            style={{ transformStyle: "preserve-3d" }}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+            {/* FRONT */}
+            <div
+              className="absolute inset-0 bg-white shadow-xl rounded-sm p-3"
+              style={{ backfaceVisibility: "hidden" }}
+            >
+              <div className="bg-black w-full h-[240px] overflow-hidden no-select">
+                <motion.img
+                  src={photo}
+                  alt="captured"
+                  className="object-cover w-full h-full  no-select"
+                />
+              </div>
+
+              <div className="mt-3 text-black text-center text-sm font-mono">
+                MAY I MEET YOU
+                <br />
+                <span className="text-xs opacity-60">
+                  {new Date().toLocaleDateString()}
+                </span>
+              </div>
+            </div>
+
+            {/* BACK */}
+            <div
+              className="absolute inset-0 bg-white shadow-xl rounded-sm p-4"
+              style={{
+                backfaceVisibility: "hidden",
+                transform: "rotateY(180deg)",
+              }}
+            >
+              <textarea
+                placeholder="SECRET MESSAGE"
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                className="w-full h-full resize-none outline-none border border-dashed p-3 text-sm font-mono text-black"
+              />
+            </div>
+            <button
+              onClick={() => setFlipped(prev => !prev)}
+              className="absolute -right-10 top-1/2 text-xs rotate-90 text-gray-900 cursor-pointer"
+            >
+              <FlipHorizontal2 />
+            </button>
+          </motion.div>
+        ))
+      ) : (
+        <motion.div
+          drag
+          dragMomentum={false}
+          dragConstraints={dragContainer}
+          className="relative w-[280px] h-[360px] cursor-grab perspective-distant"
+          animate={{ rotateY: flipped ? 180 : 0 }}
+          transition={{ duration: 0.6, ease: "easeInOut" }}
+          style={{ transformStyle: "preserve-3d" }}
+        >
+          {/* FRONT */}
+          <div
+            className="absolute inset-0 bg-white shadow-xl rounded-sm p-3"
+            style={{ backfaceVisibility: "hidden" }}
+          >
+            <div className="bg-black w-full h-[240px] overflow-hidden no-select">
+              <motion.img
+                src={'/cool-cat.jpg'}
+                alt="captured"
+                className="object-cover w-full h-full  no-select"
+              />
+            </div>
+
+            <div className="mt-3 text-black text-center text-sm font-mono">
+              MAY I MEET YOU
+              <br />
+              <span className="text-xs opacity-60">
+                {new Date().toLocaleDateString()}
+              </span>
+            </div>
+          </div>
+
+          {/* BACK */}
+          <div
+            className="absolute inset-0 bg-white shadow-xl rounded-sm p-4"
+            style={{
+              backfaceVisibility: "hidden",
+              transform: "rotateY(180deg)",
+            }}
+          >
+            <textarea
+              placeholder="SECRET MESSAGE"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              className="w-full h-full resize-none outline-none border border-dashed p-3 text-sm font-mono text-black"
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+          </div>
+          <button
+            onClick={() => setFlipped(prev => !prev)}
+            className="absolute -right-10 top-1/2 text-xs rotate-90 text-gray-900 cursor-pointer"
           >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+            <FlipHorizontal2 />
+          </button>
+        </motion.div>
+      )}
+    </motion.div>
   );
 }
