@@ -1,20 +1,16 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { RotateCcw, RotateCw } from "lucide-react";
 import { motion } from "motion/react";
 import { useState } from "react";
 
 interface Photo {
     id: string;
-    blob: Blob;
-    originalURL: string;
-    editedURL: string | null;
-    isProcessing: boolean;
-    message: string;
-    // Store the photo's position after initial animation or drag
-    position: { x: number; y: number };
-    rotation: number;
-    hasAnimated: boolean; // Track if initial animation is complete
+    imageUrl: string,
+    message: string,
+    position: { x: number; y: number },
+    rotation: number,
+    createdAt: any,
 }
-
 
 interface PhotoCardProps {
     photo: Photo;
@@ -29,7 +25,7 @@ export default function ViewCard({
 }: PhotoCardProps) {
     const [isHovered, setIsHovered] = useState(false);
 
-    const displayURL = photo.editedURL || photo.originalURL;
+    const displayURL = photo.imageUrl;
 
     return (
         <div style={{ perspective: 1000 }}>
@@ -79,7 +75,7 @@ export default function ViewCard({
                         HEY YOU 👋
                         <br />
                         <span className="text-xs opacity-60">
-                            {new Date().toLocaleDateString()}
+                            {new Date(photo.createdAt._seconds * 1000 + photo.createdAt._nanoseconds / 1000000).toLocaleDateString()}
                         </span>
                     </div>
                 </div>
@@ -94,7 +90,7 @@ export default function ViewCard({
                 >
                     <textarea
                         placeholder="Write a special message..."
-                        value={photo.message}
+                        value={photo.message || 'No Secret Message'}
                         readOnly
                         // onChange={(e) => onMessageChange(e.target.value)}
                         // onClick={(e) => e.stopPropagation()}
@@ -116,7 +112,7 @@ export default function ViewCard({
                         scale: 1.1,
                     }}
                     animate={{
-                        opacity: isHovered ? 1 : 0, // Control opacity with state
+                        opacity: isHovered ? 1 : 0,
                     }}
                 >
                     {isFlipped ? <RotateCw className="w-5 h-5 text-gray-800 rotate-90" /> : <RotateCcw className="w-5 h-5 text-gray-800 rotate-90" />}

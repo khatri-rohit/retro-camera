@@ -3,17 +3,13 @@
 import { useEffect, useState } from "react";
 import ViewCard from "../../../components/ViewCard";
 
-
 interface Photo {
     id: string;
-    blob: Blob;
-    originalURL: string;
-    editedURL: string | null;
-    isProcessing: boolean;
-    message: string;
-    position: { x: number; y: number };
-    rotation: number;
-    hasAnimated: boolean;
+    imageUrl: string,
+    message: string,
+    position: { x: number; y: number },
+    rotation: number,
+    createdAt: Date,
 }
 
 const Gallery = () => {
@@ -23,30 +19,23 @@ const Gallery = () => {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        // Simulate fetching photos from an API or local storage
         const fetchPhotos = async () => {
             try {
-                // Replace with actual data fetching logic
-                const mockPhotos: Photo[] = [
-                    {
-                        id: "1",
-                        blob: new Blob(),
-                        originalURL: "/cool-cat.jpg",
-                        editedURL: null,
-                        isProcessing: false,
-                        message: "Rohit Khatri",
-                        position: { x: 0, y: 0 },
-                        rotation: -10,
-                        hasAnimated: false,
-                    },
-                    // Add more mock photos as needed
-                ];
-                setPhotos(mockPhotos);
-            } catch (err) {
-                console.log(err);
-                setError("Failed to load photos.");
-            } finally {
+                setLoading(true);
+                const res = await fetch("/api/gallery");
+
+                if (!res.ok) {
+                    throw new Error(`Fetch failed: ${res.statusText}`);
+                }
+
+                const data = await res.json();
+                console.log("Fetch successful:", data);
+                setPhotos(data.data);
                 setLoading(false);
+                setError(null);
+            } catch (error) {
+                console.error("Fetch error:", error);
+                setError("Failed to load photos.");
             }
         };
 

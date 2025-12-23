@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import PhotoCard from "../../components/PhotoCard";
 import FilterSilder from "../../components/FilterSilder";
-// import { editCapturedPhoto } from "./firebaseGetImage";
+import { editCapturedPhoto } from "./firebaseGetImage";
 import { availableFilters } from "../../components/Filters";
 import Link from "next/link";
 
@@ -49,13 +49,13 @@ export default function InstantCameraCard() {
   };
 
   // Mock Gemini processing - replace with your actual editCapturedPhoto function
-  const editCapturedPhoto = async (blob: Blob, prompt: string): Promise<string> => {
-    // Simulate processing delay
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    console.log(prompt);
-    // Return original for demo - replace with actual Gemini call
-    return URL.createObjectURL(blob);
-  };
+  // const editCapturedPhoto = async (blob: Blob, prompt: string) => {
+  //   // Simulate processing delay
+  //   await new Promise(resolve => setTimeout(resolve, 3000));
+  //   console.log(prompt);
+  //   // Return original for demo - replace with actual Gemini call
+  //   return { url: URL.createObjectURL(blob), processedBlob: blob };
+  // };
 
 
   const capture = async () => {
@@ -108,12 +108,15 @@ export default function InstantCameraCard() {
 
       // Process in background
       try {
-        const editedURL = await editCapturedPhoto(blob, availableFilters[activeIndex].prompt);
-
+        const { url, processedBlob } = await editCapturedPhoto(
+          blob,
+          availableFilters[activeIndex].prompt
+        );
+        // uploadPhotoCard(newPhoto)
         setPhotos((prev) =>
           prev.map((p) =>
             p.id === photoId
-              ? { ...p, editedURL: editedURL ?? null, isProcessing: false }
+              ? { ...p, editedURL: url ?? null, isProcessing: false, blob: processedBlob }
               : p
           )
         );
@@ -126,6 +129,39 @@ export default function InstantCameraCard() {
         );
       }
     }, "image/png");
+  };
+
+  const uploadPhotoCard = async (photo: Photo) => {
+    const formData = new FormData();
+    formData.append("file", photo.blob, `${photo.id}.jpg`);
+
+    const photoData = {
+      id: photo.id,
+      message: photo.message,
+      position: photo.position,
+      rotation: photo.rotation,
+      hasAnimated: photo.hasAnimated,
+    };
+
+    formData.append("photo", JSON.stringify(photoData));
+
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        throw new Error(`Upload failed: ${res.statusText}`);
+      }
+
+      const data = await res.json();
+      console.log("Upload successful:", data);
+      return data;
+    } catch (error) {
+      console.error("Upload error:", error);
+      throw error;
+    }
   };
 
   const toggleFlip = (photoId: string) => {
@@ -250,6 +286,7 @@ export default function InstantCameraCard() {
                 key={photo.id}
                 photo={photo}
                 index={index}
+                uploadPhotoCard={uploadPhotoCard}
                 totalLength={photos.length}
                 dragConstraints={dragContainer}
                 isFlipped={flippedPhotos.has(photo.id)}

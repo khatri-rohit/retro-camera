@@ -1,4 +1,4 @@
-import { Loader2, RotateCcw, RotateCw } from "lucide-react";
+import { Loader2, RotateCcw, RotateCw, Upload } from "lucide-react";
 import { motion, useMotionValue } from "motion/react";
 import { useState } from "react";
 
@@ -27,6 +27,7 @@ interface PhotoCardProps {
     onPositionChange: (x: number, y: number) => void;
     onAnimationComplete: () => void;
     onRotationChange: (rotation: number) => void;
+    uploadPhotoCard: (photo: Photo) => void;
 }
 
 export default function PhotoCard({
@@ -39,7 +40,8 @@ export default function PhotoCard({
     // totalLength,
     onAnimationComplete,
     onPositionChange,
-    onRotationChange
+    onRotationChange,
+    uploadPhotoCard
 }: PhotoCardProps) {
     const [isHovered, setIsHovered] = useState(false);
 
@@ -131,6 +133,26 @@ export default function PhotoCard({
                 cursor: "grabbing"
             }}
         >
+            {/* Share Button */}
+            <motion.button
+                onClick={() => uploadPhotoCard(photo)}
+                className="absolute -top-6 -translate-x-1/2 -translate-y-1/2 left-1/2 flex gap-2 px-3 py-3 text-black bg-white/50 backdrop-blur-sm font-mono shadow-xl cursor-pointer transition-all rounded-full z-50 w-full"
+                animate={{
+                    opacity: isHovered ? 1 : 0,
+                }}
+                transition={{
+                    duration: 0.1,
+                    ease: "easeInOut",
+                }}
+                whileHover={{
+                    scale: 1.05,
+                    backgroundColor: "rgba(255, 255, 255, 0.8)",
+                }}
+            >
+                <span className="text-sm">Share it with the world</span>
+                <Upload className="w-5 h-5 text-gray-800 rotate-90" />
+            </motion.button>
+
             {/* Front Side */}
             <div
                 className="absolute inset-0 bg-white shadow-2xl rounded-sm p-4"
