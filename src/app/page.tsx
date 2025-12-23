@@ -4,8 +4,10 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import PhotoCard from "../../components/PhotoCard";
+import FilterSilder from "../../components/FilterSilder";
 // import { editCapturedPhoto } from "./firebaseGetImage";
-
+import { availableFilters } from "../../components/Filters";
+import Link from "next/link";
 
 interface Photo {
   id: string;
@@ -29,6 +31,7 @@ export default function InstantCameraCard() {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [flippedPhotos, setFlippedPhotos] = useState<Set<string>>(new Set());
   const [isCapturing, setIsCapturing] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
 
   // Ask camera permission
   const startCamera = async () => {
@@ -46,10 +49,10 @@ export default function InstantCameraCard() {
   };
 
   // Mock Gemini processing - replace with your actual editCapturedPhoto function
-  const editCapturedPhoto = async (blob: Blob): Promise<string> => {
+  const editCapturedPhoto = async (blob: Blob, prompt: string): Promise<string> => {
     // Simulate processing delay
     await new Promise(resolve => setTimeout(resolve, 3000));
-
+    console.log(prompt);
     // Return original for demo - replace with actual Gemini call
     return URL.createObjectURL(blob);
   };
@@ -105,12 +108,12 @@ export default function InstantCameraCard() {
 
       // Process in background
       try {
-        const editedURL = await editCapturedPhoto(blob);
+        const editedURL = await editCapturedPhoto(blob, availableFilters[activeIndex].prompt);
 
         setPhotos((prev) =>
           prev.map((p) =>
             p.id === photoId
-              ? { ...p, editedURL, isProcessing: false }
+              ? { ...p, editedURL: editedURL ?? null, isProcessing: false }
               : p
           )
         );
@@ -182,16 +185,20 @@ export default function InstantCameraCard() {
     <motion.div
       ref={dragContainer}
       className="relative flex items-center justify-center h-screen no-select overflow-hidden"
+      style={{
+        background: 'url("/background.jpg") no-repeat center center fixed',
+        backgroundSize: 'cover'
+      }}
     >
 
       {/* Camera */}
-      <div className="absolute bottom-20 right-10 w-[29.8vw] flex">
+      <div className="absolute bottom-20 right-10 w-[30vw] flex">
         <video
           ref={videoRef}
           autoPlay
           playsInline
           muted
-          className={`absolute top-[60.1%] right-2.5 -translate-y-1/2 -translate-x-1/2 object-cover ${!videoRef.current?.srcObject ? "bg-black w-68 h-80" : ""}`}
+          className={`absolute top-[60%] right-0 -translate-y-1/2 -translate-x-1/2 object-cover z-50 ${!videoRef.current?.srcObject ? "bg-black w-68 h-80" : ""}`}
         >
           {!videoRef.current?.srcObject && (
             <p className="text-white absolute top-1/2 z-50">
@@ -205,10 +212,14 @@ export default function InstantCameraCard() {
 
         <button
           onClick={capture}
-          className="absolute top-72 left-27 w-23 h-23 rounded-full flex items-center justify-center z-50 cursor-pointer"
+          className="absolute top-74 left-29.5 w-21 h-21 rounded-full flex items-center justify-center z-50 cursor-pointer"
           disabled={isCapturing}
         >
         </button>
+
+        <div className="absolute -bottom-20 -right-12 -translate-x-1/2 z-50 w-[300px]">
+          <FilterSilder activeIndex={activeIndex} setActiveIndex={setActiveIndex} />
+        </div>
       </div>
 
       {!videoRef.current?.srcObject && (
@@ -219,6 +230,16 @@ export default function InstantCameraCard() {
           📷 Enable Camera
         </button>
       )}
+
+      {/* Gallery */}
+      <div className="absolute bottom-4 left-4">
+        <Link
+          href="/gallery"
+          className="px-4 py-2 bg-gray-900 text-amber-100 border-2 border-gray-800 rounded font-serif shadow-lg hover:bg-gray-500 cursor-pointer transition-colors duration-200"
+        >
+          Public Gallery
+        </Link>
+      </div>
 
       {/* Instant Card */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">

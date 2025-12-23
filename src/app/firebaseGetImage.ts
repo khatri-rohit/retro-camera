@@ -11,7 +11,7 @@ const ai = getAI(firebaseApp, { backend: new GoogleAIBackend() });
 const model = getGenerativeModel(ai, {
   model: "gemini-2.5-flash-image",
   generationConfig: {
-    responseModalities: [ResponseModality.TEXT, ResponseModality.IMAGE],
+    responseModalities: [ResponseModality.IMAGE],
   },
 });
 
@@ -33,16 +33,18 @@ async function blobToGenerativePart(blob: Blob) {
   };
 }
 
-export async function editCapturedPhoto(photoBlob: Blob) {
+export async function editCapturedPhoto(photoBlob: Blob, prompt: string) {
+  if (!prompt) return;
+
   const imagePart = await blobToGenerativePart(photoBlob);
 
-  const prompt =
-    "Apply a retro instant-camera photo look to this image. Add soft faded colors, slightly warm tones, gentle film grain, mild vignetting, subtle blur, and reduced contrast. Preserve the original subject and composition. Do not add text, borders, or new objects. Make it look like a real printed photo from the late 1990s.";
+  const result = await model.generateContent([imagePart, prompt]);
 
-  const result = await model.generateContent([prompt, imagePart]);
   const inlineData = result?.response.inlineDataParts()?.[0]?.inlineData;
 
-  if (!inlineData) throw new Error("No image returned");
+  if (!inlineData) {
+    throw new Error("No image returned from Gemini");
+  }
 
   const editedBlob = new Blob(
     [Uint8Array.from(atob(inlineData.data), (c) => c.charCodeAt(0))],
