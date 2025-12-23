@@ -56,17 +56,18 @@ export default function InstantCameraCard() {
       };
       setNewImage(image);
 
-      // editCapturedPhoto(blob).then((image) => {
-      //   console.log(image);
-      // setPhotos([...photos.slice(0, len), {
-      //   blob,
-      //   previewURL: image
-      // }]);
-      //   setLoading(false);
-      // }).catch((err) => {
-      //   console.log(err);
-      //   setLoading(false);
-      // })
+      editCapturedPhoto(blob).then((image) => {
+        console.log(image);
+        setNewImage(image);
+        setPhotos([...photos.slice(0, len), {
+          blob,
+          previewURL: image
+        }]);
+        setLoading(false);
+      }).catch((err) => {
+        console.log(err);
+        setLoading(false);
+      })
 
     }, "image/png");
     setLoading(false);
@@ -87,16 +88,20 @@ export default function InstantCameraCard() {
           drag
           dragConstraints={dragContainer}
           dragMomentum={false}
-          className="absolute top-20 right-10 w-70 h-90 cursor-grab perspective-distant"
-          animate={{ rotateY: flipped ? 180 : 0 }}
-          transition={{ duration: 0.6, ease: "easeInOut" }}
+          className="absolute top-20 right-42 w-70 h-90 cursor-grab perspective-distant group"
+          initial={{ y: 350 }}
+          animate={{
+            rotateY: flipped ? 180 : 0,
+            y: 0,
+          }}
+          transition={{ duration: 2, ease: "easeInOut" }}
           style={{ transformStyle: "preserve-3d" }}
         >
           <div
             className="absolute inset-0 bg-white shadow-xl rounded-sm p-3"
             style={{ backfaceVisibility: "hidden" }}
           >
-            <div className={`bg-black w-full transition-all duration-200 h-60 overflow-hidden no-select ${loading ? "opacity-0 blur-sm" : ""}`}>
+            <div className={`bg-black w-full transition-all duration-200 h-60 overflow-hidden no-select ${loading ? "blur-sm" : ""}`}>
               <motion.img
                 src={newImage?.previewURL}
                 alt="captured"
@@ -171,10 +176,10 @@ export default function InstantCameraCard() {
       <canvas ref={canvasRef} className="hidden" />
 
       {/* Instant Card */}
-      {photos.length > 0 ? (
+      {photos.filter((_, index) => index + 1 < photos.length).length > 0 ? (
         photos.filter((_, index) => index + 1 < photos.length).map((photo, index) => (
           <motion.div
-            key={`${photo.previewURL}-${index}`}
+            key={`${photo?.previewURL}-${index}`}
             drag
             dragConstraints={dragContainer}
             dragMomentum={false}
@@ -189,7 +194,7 @@ export default function InstantCameraCard() {
             >
               <div className="bg-black w-full transition-all duration-200 h-60 overflow-hidden no-select">
                 <motion.img
-                  src={photo.previewURL}
+                  src={photo?.previewURL}
                   alt="captured"
                   className="object-cover w-full h-full no-select"
                 />

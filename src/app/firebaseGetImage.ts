@@ -39,7 +39,7 @@ export async function editCapturedPhoto(photoBlob: Blob) {
   const prompt =
     "Apply a retro instant-camera photo look to this image. Add soft faded colors, slightly warm tones, gentle film grain, mild vignetting, subtle blur, and reduced contrast. Preserve the original subject and composition. Do not add text, borders, or new objects. Make it look like a real printed photo from the late 1990s.";
 
-  //   const result = await model.generateContent([prompt, imagePart]);
+  const result = await model.generateContent([prompt, imagePart]);
   const inlineData = result?.response.inlineDataParts()?.[0]?.inlineData;
 
   if (!inlineData) throw new Error("No image returned");
