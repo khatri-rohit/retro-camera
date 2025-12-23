@@ -1,7 +1,7 @@
 import {
   getAI,
-  getGenerativeModel,
   GoogleAIBackend,
+  getGenerativeModel,
   ResponseModality,
 } from "firebase/ai";
 import { app as firebaseApp } from "./../../firebase";

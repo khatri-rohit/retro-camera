@@ -1,5 +1,6 @@
 import { Loader2, RotateCcw, RotateCw } from "lucide-react";
 import { motion, useMotionValue } from "motion/react";
+import { useState } from "react";
 
 interface Photo {
     id: string;
@@ -25,6 +26,7 @@ interface PhotoCardProps {
     onMessageChange: (msg: string) => void;
     onPositionChange: (x: number, y: number) => void;
     onAnimationComplete: () => void;
+    onRotationChange: (rotation: number) => void;
 }
 
 export default function PhotoCard({
@@ -36,12 +38,14 @@ export default function PhotoCard({
     dragConstraints,
     // totalLength,
     onAnimationComplete,
-    onPositionChange
+    onPositionChange,
+    onRotationChange
 }: PhotoCardProps) {
-    const displayURL = photo.editedURL || photo.originalURL;
+    const [isHovered, setIsHovered] = useState(false);
 
     // const rotationOffset = (index - totalLength / 2) * 5;
 
+    const displayURL = photo.editedURL || photo.originalURL;
     // Use motion values for smooth dragging
     const x = useMotionValue(photo.position.x);
     const y = useMotionValue(photo.position.y);
@@ -56,6 +60,17 @@ export default function PhotoCard({
                 const newX = photo.position.x + info.offset.x;
                 const newY = photo.position.y + info.offset.y;
                 onPositionChange(newX, newY);
+            }}
+            onHoverStart={() => setIsHovered(true)}
+            onHoverEnd={() => setIsHovered(false)}
+            onClick={() => {
+                if (photo.rotation === 0) {
+                    onRotationChange(10);
+                } else if (photo.rotation === 10) {
+                    onRotationChange(-10);
+                } else {
+                    onRotationChange(0);
+                }
             }}
             initial={
                 !photo.hasAnimated
@@ -78,7 +93,6 @@ export default function PhotoCard({
                 rotate: photo.rotation,
                 scale: 1,
                 rotateY: isFlipped ? 180 : 0,
-                transition: { duration: 2.5 },
             }}
             transition={{
                 type: "spring",
@@ -155,7 +169,7 @@ export default function PhotoCard({
                 </div>
 
                 <div className="mt-4 text-black text-center text-sm font-mono">
-                    MAY I MEET YOU
+                    HEY YOU 👋
                     <br />
                     <span className="text-xs opacity-60">
                         {new Date().toLocaleDateString()}
@@ -172,7 +186,7 @@ export default function PhotoCard({
                 }}
             >
                 <textarea
-                    placeholder="Write your secret message here..."
+                    placeholder="Write a special message..."
                     value={photo.message}
                     onChange={(e) => onMessageChange(e.target.value)}
                     onClick={(e) => e.stopPropagation()}
@@ -186,12 +200,15 @@ export default function PhotoCard({
                     e.stopPropagation();
                     onFlip();
                 }}
-                className="absolute -right-14 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm p-3 rounded-full shadow-xl hover:bg-white transition-all z-201 group-hover:opacity-100 opacity-0"
+                className="cursor-pointer absolute -right-3 top-1/2 -translate-y-1/2 bg-white/50 backdrop-blur-sm p-3 rounded-full shadow-xl hover:bg-white/80 transition-all z-201"
                 style={{ pointerEvents: "auto" }}
                 whileHover={{
                     opacity: 1,
                     x: 0,
                     scale: 1.1,
+                }}
+                animate={{
+                    opacity: isHovered ? 1 : 0, // Control opacity with state
                 }}
             >
                 {isFlipped ? <RotateCw className="w-5 h-5 text-gray-800 rotate-90" /> : <RotateCcw className="w-5 h-5 text-gray-800 rotate-90" />}
