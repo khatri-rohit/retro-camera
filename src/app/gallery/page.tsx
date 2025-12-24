@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import ViewCard from "../../../components/ViewCard";
 import Link from "next/link";
+import { motion } from "framer-motion";
 
 interface Photo {
     id: string;
@@ -18,6 +19,33 @@ const Gallery = () => {
     const [photos, setPhotos] = useState<Photo[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.1,
+            },
+        },
+    };
+
+    const itemVariants = {
+        hidden: { opacity: 0, y: 20 },
+        visible: { opacity: 1, y: 0 },
+    };
+
+    const toggleFlip = (photoId: string) => {
+        setFlippedPhotos((prev) => {
+            const newSet = new Set(prev);
+            if (newSet.has(photoId)) {
+                newSet.delete(photoId);
+            } else {
+                newSet.add(photoId);
+            }
+            return newSet;
+        });
+    };
 
     useEffect(() => {
         const fetchPhotos = async () => {
@@ -42,18 +70,6 @@ const Gallery = () => {
 
         fetchPhotos();
     }, []);
-
-    const toggleFlip = (photoId: string) => {
-        setFlippedPhotos((prev) => {
-            const newSet = new Set(prev);
-            if (newSet.has(photoId)) {
-                newSet.delete(photoId);
-            } else {
-                newSet.add(photoId);
-            }
-            return newSet;
-        });
-    };
 
     if (loading) {
         return (
@@ -83,25 +99,31 @@ const Gallery = () => {
                     Instant Camera
                 </Link>
             </div>
-            <header className="text-center mb-8">
+            <header className="text-center mb-25">
                 <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-amber-800 mb-2 drop-shadow-lg">Photo Gallery</h1>
-                <p className="text-orange-700 text-sm sm:text-base font-medium">Explore your retro camera captures</p>
+                <p className="text-orange-700 text-sm sm:text-base font-medium tracking-wide">Explore your retro camera captures</p>
             </header>
             {photos.length === 0 ? (
                 <div className="flex items-center justify-center h-64">
                     <p className="text-gray-700 text-lg bg-white/70 backdrop-blur-sm rounded-lg px-4 py-2 shadow-md">No photos available. Start capturing!</p>
                 </div>
             ) : (
-                <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 sm:gap-8">
+                <motion.div
+                    className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 sm:gap-x-56"
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                >
                     {photos.map((photo) => (
-                        <ViewCard
-                            key={photo.id}
-                            photo={photo}
-                            isFlipped={flippedPhotos.has(photo.id)}
-                            onFlip={() => toggleFlip(photo.id)}
-                        />
+                        <motion.div key={photo.id} variants={itemVariants}>
+                            <ViewCard
+                                photo={photo}
+                                isFlipped={flippedPhotos.has(photo.id)}
+                                onFlip={() => toggleFlip(photo.id)}
+                            />
+                        </motion.div>
                     ))}
-                </div>
+                </motion.div>
             )}
             <footer className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-amber-800 text-xs font-semibold">
                 © 2025 Retro Camera App

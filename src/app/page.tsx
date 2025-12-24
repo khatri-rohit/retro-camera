@@ -5,21 +5,21 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import PhotoCard from "../../components/PhotoCard";
 import FilterSilder from "../../components/FilterSilder";
-// import { editCapturedPhoto } from "./firebaseGetImage";
+import { editCapturedPhoto } from "./firebaseGetImage";
 import { availableFilters } from "../../components/Filters";
 import Link from "next/link";
 
 interface Photo {
   id: string;
-  blob: Blob;
+  blob: Blob | null;
   originalURL: string;
   editedURL: string | null;
   isProcessing: boolean;
   message: string;
-  // Store the photo's position after initial animation or drag
+  isUploading: boolean;
   position: { x: number; y: number };
   rotation: number;
-  hasAnimated: boolean; // Track if initial animation is complete
+  hasAnimated: boolean;
 }
 
 
@@ -27,6 +27,45 @@ export default function InstantCameraCard() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const dragContainer = useRef<HTMLDivElement>(null)
+
+  const [demoData, setDemoData] = useState<Photo[]>([
+    {
+      id: "photo-1675589797",
+      blob: null,
+      originalURL: '/self.jpg ',
+      editedURL: null,
+      isProcessing: false,
+      isUploading: false,
+      message: "",
+      position: { x: -1280, y: 0 },
+      rotation: -10,
+      hasAnimated: false,
+    },
+    {
+      id: "photo-167558911797",
+      blob: null,
+      originalURL: '/self1jfif.jfif ',
+      editedURL: null,
+      isProcessing: false,
+      isUploading: false,
+      message: "",
+      position: { x: -1350, y: 20 },
+      rotation: 0,
+      hasAnimated: false,
+    },
+    {
+      id: "photo-111111111",
+      blob: null,
+      originalURL: '/self2jfif.jfif ',
+      editedURL: null,
+      isProcessing: false,
+      isUploading: false,
+      message: "",
+      position: { x: -1400, y: 40 },
+      rotation: 10,
+      hasAnimated: false,
+    }
+  ]);
 
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [flippedPhotos, setFlippedPhotos] = useState<Set<string>>(new Set());
@@ -48,34 +87,33 @@ export default function InstantCameraCard() {
     }
   };
 
-  // Mock Gemini processing - replace with your actual editCapturedPhoto function
-  const editCapturedPhoto = async (blob: Blob, prompt: string) => {
-    // Simulate processing delay
-    setIsCapturing(true);
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    console.log(prompt);
-    setIsCapturing(false);
-    // Return original for demo - replace with actual Gemini call
-    return { url: URL.createObjectURL(blob), processedBlob: blob };
-  };
-
+  // // Mock Gemini processing - replace with your actual editCapturedPhoto function
+  // const editCapturedPhoto = async (blob: Blob, prompt: string) => {
+  //   // Simulate processing delay
+  //   setIsCapturing(true);
+  //   await new Promise(resolve => setTimeout(resolve, 3000));
+  //   console.log(prompt);
+  //   setIsCapturing(false);
+  //   // Return original for demo - replace with actual Gemini call
+  //   return { url: URL.createObjectURL(blob), processedBlob: blob };
+  // };
 
   const capture = async () => {
     if (!videoRef.current || !canvasRef.current || isCapturing) return;
+
     if (!videoRef.current.srcObject) {
       startCamera();
       return;
     }
+
     setIsCapturing(true);
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // Set canvas dimensions
     canvas.width = videoRef.current.videoWidth;
     canvas.height = videoRef.current.videoHeight;
 
-    // Draw current video frame
     ctx.drawImage(videoRef.current, 0, 0);
 
     canvas.toBlob(async (blob) => {
@@ -87,36 +125,32 @@ export default function InstantCameraCard() {
       const photoId = `photo-${Date.now()}`;
       const originalURL = URL.createObjectURL(blob);
 
-      // Calculate initial stack position for this new photo
       const stackIndex = photos.length;
       const stackOffset = stackIndex * 20;
       // const rotationOffset = (stackIndex % 3 - 1) * 8; // Vary rotation: -8, 0, 8
 
-      // Add photo immediately with processing state
       const newPhoto: Photo = {
         id: photoId,
         blob,
         originalURL,
         editedURL: null,
         isProcessing: true,
+        isUploading: false,
         message: "",
-        position: { x: -stackOffset, y: 0 }, // Final resting position
+        position: { x: -stackOffset, y: 0 },
         rotation: 0,
-        hasAnimated: false, // Will animate on mount
+        hasAnimated: false,
       };
 
       setPhotos((prev) => [newPhoto, ...prev]);
       setIsCapturing(false);
 
-      sessionStorage.setItem("photos", JSON.stringify([newPhoto, ...JSON.parse(sessionStorage.getItem("photos") || "[]")]));
-
-      // Process in background
       try {
         const { url, processedBlob } = await editCapturedPhoto(
           blob,
           availableFilters[activeIndex].prompt
         );
-        // uploadPhotoCard(newPhoto)
+
         setPhotos((prev) =>
           prev.map((p) =>
             p.id === photoId
@@ -137,7 +171,23 @@ export default function InstantCameraCard() {
 
   const uploadPhotoCard = async (photo: Photo) => {
     const formData = new FormData();
-    formData.append("file", photo.blob, `${photo.id}.jpg`);
+    if (photos.length < 1) {
+      setDemoData((prev) =>
+        prev.map((p) =>
+          p.id === photo.id ? { ...p, isUploading: true } : p
+        )
+      );
+      const blob = await fetch(photo.originalURL).then(res => res.blob());
+      console.log(blob);
+      formData.append("file", blob, `${photo.id}.jpg`);
+    } else {
+      setPhotos((prev) =>
+        prev.map((p) =>
+          p.id === photo.id ? { ...p, isUploading: true } : p
+        )
+      );
+      formData.append("file", photo.blob as Blob, `${photo.id}.jpg`);
+    }
 
     const photoData = {
       id: photo.id,
@@ -161,8 +211,34 @@ export default function InstantCameraCard() {
 
       const data = await res.json();
       console.log("Upload successful:", data);
+      if (photos.length < 1) {
+        setDemoData((prev) =>
+          prev.map((p) =>
+            p.id === photo.id ? { ...p, isUploading: false } : p
+          )
+        );
+      } else {
+        setPhotos((prev) =>
+          prev.map((p) =>
+            p.id === photo.id ? { ...p, isUploading: false } : p
+          )
+        );
+      }
       return data;
     } catch (error) {
+      if (photos.length < 1) {
+        setDemoData((prev) =>
+          prev.map((p) =>
+            p.id === photo.id ? { ...p, isUploading: false } : p
+          )
+        );
+      } else {
+        setPhotos((prev) =>
+          prev.map((p) =>
+            p.id === photo.id ? { ...p, isUploading: false } : p
+          )
+        );
+      }
       console.error("Upload error:", error);
       throw error;
     }
@@ -181,6 +257,14 @@ export default function InstantCameraCard() {
   };
 
   const updatePhotoRotation = (photoId: string, rotation: number) => {
+    if (photos.length < 1) {
+      setDemoData((prev) =>
+        prev.map((p) =>
+          p.id === photoId ? { ...p, rotation, hasAnimated: true } : p
+        )
+      );
+      return;
+    }
     setPhotos((prev) =>
       prev.map((p) =>
         p.id === photoId ? { ...p, rotation, hasAnimated: true } : p
@@ -189,6 +273,14 @@ export default function InstantCameraCard() {
   };
 
   const updatePhotoPosition = (photoId: string, x: number, y: number) => {
+    if (photos.length < 1) {
+      setDemoData((prev) =>
+        prev.map((p) =>
+          p.id === photoId ? { ...p, position: { x, y }, hasAnimated: true } : p
+        )
+      );
+      return;
+    }
     setPhotos((prev) =>
       prev.map((p) =>
         p.id === photoId ? { ...p, position: { x, y }, hasAnimated: true } : p
@@ -197,12 +289,24 @@ export default function InstantCameraCard() {
   };
 
   const markAsAnimated = (photoId: string) => {
+    if (photos.length < 1) {
+      setDemoData((prev) =>
+        prev.map((p) => (p.id === photoId ? { ...p, hasAnimated: true } : p))
+      );
+      return;
+    }
     setPhotos((prev) =>
       prev.map((p) => (p.id === photoId ? { ...p, hasAnimated: true } : p))
     );
   };
 
   const updateMessage = (photoId: string, message: string) => {
+    if (photos.length < 1) {
+      setDemoData((prev) =>
+        prev.map((p) => (p.id === photoId ? { ...p, message } : p))
+      );
+      return;
+    }
     setPhotos((prev) =>
       prev.map((p) => (p.id === photoId ? { ...p, message } : p))
     );
@@ -274,7 +378,7 @@ export default function InstantCameraCard() {
         </button>
 
         <div className="absolute -bottom-20 -right-12 -translate-x-1/2 z-50 w-[300px]">
-          <FilterSilder activeIndex={activeIndex} setActiveIndex={setActiveIndex} />
+          <FilterSilder activeIndex={activeIndex} setActiveIndex={setActiveIndex} capture={capture} />
         </div>
       </div>
 
@@ -300,24 +404,45 @@ export default function InstantCameraCard() {
       {/* Instant Card */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <AnimatePresence>
-          {photos.map((photo, index) => {
-            return (
-              <PhotoCard
-                key={photo.id}
-                photo={photo}
-                index={index}
-                uploadPhotoCard={uploadPhotoCard}
-                totalLength={photos.length}
-                dragConstraints={dragContainer}
-                isFlipped={flippedPhotos.has(photo.id)}
-                onFlip={() => toggleFlip(photo.id)}
-                onMessageChange={(msg) => updateMessage(photo.id, msg)}
-                onPositionChange={(x, y) => updatePhotoPosition(photo.id, x, y)}
-                onAnimationComplete={() => markAsAnimated(photo.id)}
-                onRotationChange={(rotation) => updatePhotoRotation(photo.id, rotation)}
-              />
-            );
-          })}
+          {photos.length < 1 ? (
+            demoData.map((photo, index) => {
+              return (
+                <PhotoCard
+                  key={photo.id}
+                  photo={photo}
+                  index={index}
+                  uploadPhotoCard={uploadPhotoCard}
+                  totalLength={photos.length}
+                  dragConstraints={dragContainer}
+                  isFlipped={flippedPhotos.has(photo.id)}
+                  onFlip={() => toggleFlip(photo.id)}
+                  onMessageChange={(msg) => updateMessage(photo.id, msg)}
+                  onPositionChange={(x, y) => updatePhotoPosition(photo.id, x, y)}
+                  onAnimationComplete={() => markAsAnimated(photo.id)}
+                  onRotationChange={(rotation) => updatePhotoRotation(photo.id, rotation)}
+                />
+              );
+            })
+          ) : (
+            photos.map((photo, index) => {
+              return (
+                <PhotoCard
+                  key={photo.id}
+                  photo={photo}
+                  index={index}
+                  uploadPhotoCard={uploadPhotoCard}
+                  totalLength={photos.length}
+                  dragConstraints={dragContainer}
+                  isFlipped={flippedPhotos.has(photo.id)}
+                  onFlip={() => toggleFlip(photo.id)}
+                  onMessageChange={(msg) => updateMessage(photo.id, msg)}
+                  onPositionChange={(x, y) => updatePhotoPosition(photo.id, x, y)}
+                  onAnimationComplete={() => markAsAnimated(photo.id)}
+                  onRotationChange={(rotation) => updatePhotoRotation(photo.id, rotation)}
+                />
+              );
+            })
+          )}
         </AnimatePresence>
       </div>
 

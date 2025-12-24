@@ -10,9 +10,10 @@ import { availableFilters } from "./Filters";
 interface FilterSilderProps {
     activeIndex: number,
     setActiveIndex: React.Dispatch<React.SetStateAction<number>>
+    capture: () => void
 }
 
-const FilterSilder = ({ activeIndex, setActiveIndex }: FilterSilderProps) => {
+const FilterSilder = ({ activeIndex, setActiveIndex, capture }: FilterSilderProps) => {
     const swiperRef = useRef<SwiperCore | null>(null);
 
     return (
@@ -46,6 +47,11 @@ const FilterSilder = ({ activeIndex, setActiveIndex }: FilterSilderProps) => {
                                 textWrap: 'nowrap',
                             }}
                             onClick={() => {
+                                if (index === activeIndex) {
+                                    capture();
+                                    return;
+                                }
+
                                 swiperRef.current?.slideTo(index);
                                 setActiveIndex(index);
                             }}

@@ -28,7 +28,7 @@ export default function ViewCard({
     const displayURL = photo.imageUrl;
 
     return (
-        <div style={{ perspective: 1000 }}>
+        <div style={{ perspective: 1000, userSelect: "none" }}>
             <motion.div
                 key={photo.id}
                 className="relative w-64 h-80 cursor-pointer"
@@ -38,6 +38,7 @@ export default function ViewCard({
                 animate={{
                     rotate: photo.rotation,
                     rotateY: isFlipped ? 180 : 0,
+                    transition: { duration: 0.8 },
                 }}
                 exit={{
                     opacity: 0,
@@ -51,7 +52,6 @@ export default function ViewCard({
                     transition: { duration: 0.15 }
                 }}
             >
-                {/* Front Side */}
                 <div
                     className="absolute inset-0 bg-white shadow-2xl rounded-sm p-4"
                     style={{
@@ -80,7 +80,6 @@ export default function ViewCard({
                     </div>
                 </div>
 
-                {/* Back Side */}
                 <div
                     className="absolute inset-0 bg-white shadow-2xl rounded-sm p-4"
                     style={{
@@ -90,15 +89,12 @@ export default function ViewCard({
                 >
                     <textarea
                         placeholder="Write a special message..."
-                        value={photo.message || 'No Secret Message'}
+                        value={photo.message || 'No Special Message'}
                         readOnly
-                        // onChange={(e) => onMessageChange(e.target.value)}
-                        // onClick={(e) => e.stopPropagation()}
-                        className="w-full h-full resize-none outline-none border-2 border-dashed border-gray-300 p-3 text-sm font-mono text-black focus:border-gray-500 transition-colors rounded"
+                        className="selection:bg-amber-200 selection:text-black w-full h-full resize-none outline-none border-2 border-dashed border-gray-300 p-3 text-sm font-mono text-black focus:border-gray-500 transition-colors rounded"
                     />
                 </div>
 
-                {/* Flip Button */}
                 <motion.button
                     onClick={(e) => {
                         e.stopPropagation();

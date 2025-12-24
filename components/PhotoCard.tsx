@@ -4,11 +4,12 @@ import { useState } from "react";
 
 interface Photo {
     id: string;
-    blob: Blob;
+    blob: Blob | null;
     originalURL: string;
     editedURL: string | null;
     isProcessing: boolean;
     message: string;
+    isUploading: boolean;
     // Store the photo's position after initial animation or drag
     position: { x: number; y: number };
     rotation: number;
@@ -135,22 +136,34 @@ export default function PhotoCard({
         >
             {/* Share Button */}
             <motion.button
-                onClick={() => uploadPhotoCard(photo)}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    uploadPhotoCard(photo);
+                }}
                 className="absolute -top-6 -translate-x-1/2 -translate-y-1/2 left-1/2 flex gap-2 px-3 py-3 text-black bg-white/50 backdrop-blur-sm font-mono shadow-xl cursor-pointer transition-all rounded-full z-50 w-full perspective-none"
                 animate={{
-                    opacity: isHovered ? 1 : 0,
+                    opacity: isHovered && !isFlipped ? 1 : 0,
                 }}
                 transition={{
                     duration: 0.1,
                     ease: "easeInOut",
                 }}
                 whileHover={{
-                    scale: 1.05,
                     backgroundColor: "rgba(255, 255, 255, 0.8)",
                 }}
+                disabled={photo.isUploading}
             >
-                <span className="text-sm">Share it with the world</span>
-                <Upload className="w-5 h-5 text-gray-800 rotate-90" />
+
+                {photo.isUploading ? (
+                    <div className="flex items-center justify-center w-full h-full">
+                        <Loader2 className="text-gray-800 animate-spin" />
+                    </div>
+                ) : (
+                    <>
+                        <span className="text-sm">Share it with the world</span>
+                        <Upload className="w-5 h-5 text-gray-800 rotate-90" />
+                    </>
+                )}
             </motion.button>
 
             {/* Front Side */}
