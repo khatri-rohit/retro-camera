@@ -136,7 +136,7 @@ export default function PhotoCard({
             {/* Share Button */}
             <motion.button
                 onClick={() => uploadPhotoCard(photo)}
-                className="absolute -top-6 -translate-x-1/2 -translate-y-1/2 left-1/2 flex gap-2 px-3 py-3 text-black bg-white/50 backdrop-blur-sm font-mono shadow-xl cursor-pointer transition-all rounded-full z-50 w-full"
+                className="absolute -top-6 -translate-x-1/2 -translate-y-1/2 left-1/2 flex gap-2 px-3 py-3 text-black bg-white/50 backdrop-blur-sm font-mono shadow-xl cursor-pointer transition-all rounded-full z-50 w-full perspective-none"
                 animate={{
                     opacity: isHovered ? 1 : 0,
                 }}

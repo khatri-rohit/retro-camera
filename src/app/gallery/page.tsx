@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import ViewCard from "../../../components/ViewCard";
+import Link from "next/link";
 
 interface Photo {
     id: string;
@@ -72,6 +73,16 @@ const Gallery = () => {
 
     return (
         <div className="relative w-full min-h-screen overflow-hidden bg-linear-to-br from-gray-100 to-gray-200 p-4 sm:p-6 lg:p-8">
+            {/* Gallery */}
+            <div className="absolute top-4 left-4 z-10">
+                <Link
+                    href="/"
+                    className="inline-flex items-center px-6 py-3 bg-gray-900 text-amber-100 border-2 border-gray-800 rounded-lg font-serif shadow-2xl hover:shadow-3xl hover:scale-105 hover:bg-gray-500 cursor-pointer transition-all duration-300 ease-in-out transform"
+                >
+                    <span className="mr-2">📸</span>
+                    Instant Camera
+                </Link>
+            </div>
             <header className="text-center mb-8">
                 <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-800 mb-2">Photo Gallery</h1>
                 <p className="text-gray-600 text-sm sm:text-base">Explore your retro camera captures</p>

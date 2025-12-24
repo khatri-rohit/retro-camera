@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import PhotoCard from "../../components/PhotoCard";
 import FilterSilder from "../../components/FilterSilder";
-import { editCapturedPhoto } from "./firebaseGetImage";
+// import { editCapturedPhoto } from "./firebaseGetImage";
 import { availableFilters } from "../../components/Filters";
 import Link from "next/link";
 
@@ -49,13 +49,15 @@ export default function InstantCameraCard() {
   };
 
   // Mock Gemini processing - replace with your actual editCapturedPhoto function
-  // const editCapturedPhoto = async (blob: Blob, prompt: string) => {
-  //   // Simulate processing delay
-  //   await new Promise(resolve => setTimeout(resolve, 3000));
-  //   console.log(prompt);
-  //   // Return original for demo - replace with actual Gemini call
-  //   return { url: URL.createObjectURL(blob), processedBlob: blob };
-  // };
+  const editCapturedPhoto = async (blob: Blob, prompt: string) => {
+    // Simulate processing delay
+    setIsCapturing(true);
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    console.log(prompt);
+    setIsCapturing(false);
+    // Return original for demo - replace with actual Gemini call
+    return { url: URL.createObjectURL(blob), processedBlob: blob };
+  };
 
 
   const capture = async () => {
@@ -105,6 +107,8 @@ export default function InstantCameraCard() {
 
       setPhotos((prev) => [newPhoto, ...prev]);
       setIsCapturing(false);
+
+      sessionStorage.setItem("photos", JSON.stringify([newPhoto, ...JSON.parse(sessionStorage.getItem("photos") || "[]")]));
 
       // Process in background
       try {
@@ -226,6 +230,22 @@ export default function InstantCameraCard() {
         backgroundSize: 'cover'
       }}
     >
+      {/* Camera Flash Animation */}
+      <AnimatePresence>
+        {isCapturing && (
+          <motion.div
+            className="fixed inset-0 bg-white pointer-events-none z-[9999]"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0, 1, 0] }}
+            exit={{ opacity: 0 }}
+            transition={{
+              duration: 0.4,
+              times: [0, 0.2, 1],
+              ease: "easeOut"
+            }}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Camera */}
       <div className="absolute bottom-20 right-10 w-[30vw] flex">
@@ -234,7 +254,7 @@ export default function InstantCameraCard() {
           autoPlay
           playsInline
           muted
-          className={`absolute top-[60%] right-0 -translate-y-1/2 -translate-x-1/2 object-cover z-50 ${!videoRef.current?.srcObject ? "bg-black w-68 h-80" : ""}`}
+          className={`absolute top-[60%] right-0 -translate-y-1/2 -translate-x-1/2 object-cover z-30 ${!videoRef.current?.srcObject ? "bg-black w-68 h-80" : ""}`}
         >
           {!videoRef.current?.srcObject && (
             <p className="text-white absolute top-1/2 z-50">
@@ -243,7 +263,7 @@ export default function InstantCameraCard() {
           )}
         </video>
         <img src="/camera1.png" loading="eager" alt="camera"
-          className="object-cover z-50"
+          className="object-cover z-40"
         />
 
         <button
@@ -261,19 +281,19 @@ export default function InstantCameraCard() {
       {!videoRef.current?.srcObject && (
         <button
           onClick={startCamera}
-          className="absolute top-6 left-6 z-10 px-4 py-2 bg-gray-900 text-amber-100 border-2 border-gray-800 rounded font-serif shadow-lg hover:bg-gray-500 cursor-pointer transition-colors duration-200"
+          className="absolute top-6 left-6 z-10 px-4 py-2 bg-amber-100 text-gray-900 border-2 border-amber-300 rounded-lg font-serif shadow-xl hover:bg-amber-200 hover:shadow-2xl hover:scale-105 cursor-pointer transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-amber-400"
         >
           📷 Enable Camera
         </button>
       )}
 
       {/* Gallery */}
-      <div className="absolute bottom-4 left-4">
+      <div className="absolute bottom-10 left-4">
         <Link
           href="/gallery"
-          className="px-4 py-2 bg-gray-900 text-amber-100 border-2 border-gray-800 rounded font-serif shadow-lg hover:bg-gray-500 cursor-pointer transition-colors duration-200"
+          className="px-6 py-3 bg-amber-100 text-gray-900 border-2 border-amber-300 rounded-lg font-serif shadow-xl hover:bg-amber-200 hover:shadow-2xl hover:scale-105 cursor-pointer transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-amber-400"
         >
-          Public Gallery
+          📸 Public Gallery
         </Link>
       </div>
 
