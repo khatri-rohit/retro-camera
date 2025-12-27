@@ -71,10 +71,9 @@ export async function GET(req: NextRequest) {
     const photos = await db
       .collection("photos")
       .orderBy("createdAt", "desc")
-      .limit(50) // Limit to 50 photos for performance
+      .limit(50)
       .get();
 
-    // Validate and sanitize data
     const validatedData = photos.docs
       .map((doc) => {
         const data = doc.data();
@@ -89,7 +88,6 @@ export async function GET(req: NextRequest) {
           console.warn(`Invalid photo data for doc ${doc.id}, skipping`);
           return null;
         }
-        // Sanitize message (though it should be sanitized on upload)
         const sanitizedMessage =
           typeof data.message === "string"
             ? data.message.substring(0, 500)
@@ -104,7 +102,7 @@ export async function GET(req: NextRequest) {
           createdAt: data.createdAt,
         };
       })
-      .filter(Boolean); // Remove null entries
+      .filter(Boolean);
 
     return NextResponse.json({
       message: "Photos retrieved successfully!",

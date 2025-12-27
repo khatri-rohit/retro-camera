@@ -41,7 +41,7 @@ const opts = {
 
 const rateLimiter = new RateLimiterMemory(opts);
 
-// Setup DOMPurify for server-side
+// DOMPurify for server-side
 const window = new JSDOM("").window;
 const DOMPurifyServer = DOMPurify(window);
 
@@ -96,7 +96,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Validate photo schema
     if (!photo || typeof photo !== "object") {
       return NextResponse.json(
         { error: "Invalid photo data" },
@@ -115,7 +114,7 @@ export async function POST(req: NextRequest) {
     // Sanitize message
     const sanitizedMessage = DOMPurifyServer.sanitize(photo.message, {
       ALLOWED_TAGS: [],
-    }).substring(0, 500); // Max 500 chars, no HTML
+    }).substring(0, 500); // Max 500 chars
 
     if (
       !photo.position ||
@@ -158,7 +157,6 @@ export async function POST(req: NextRequest) {
 
     const publicUrl = `https://storage.googleapis.com/${storage.name}/${filename}`;
 
-    // Now save to Firestore using batch for atomic operation
     const batch = db.batch();
     const photoRef = db.collection("photos").doc(photo.id);
 
@@ -174,14 +172,13 @@ export async function POST(req: NextRequest) {
     try {
       await batch.commit();
     } catch (firestoreError) {
-      // Cleanup: delete the uploaded file if Firestore batch fails
       try {
         await fileRef.delete();
         console.log("Cleaned up storage file due to Firestore batch error");
       } catch (cleanupError) {
         console.error("Failed to cleanup storage file:", cleanupError);
       }
-      throw firestoreError; // Re-throw to handle in outer catch
+      throw firestoreError;
     }
 
     console.log("Upload Success");

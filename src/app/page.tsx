@@ -566,7 +566,7 @@ export default function InstantCameraCard() {
           onClick={() => router.push("/gallery")}
           className="w-fit p-2.5 px-3 bg-amber-100 border-2 border-amber-300 rounded-lg font-serif shadow-xl hover:bg-amber-200 text-sm sm:text-base"
         >
-          <Images className="w-5 h-5 text-gray-600" />
+          <Images className="w-5 h-5 text-gray-900" />
         </button>
       </div>
 

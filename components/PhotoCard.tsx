@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { CheckCircle, Download, Loader2, RotateCcw, RotateCw, Upload, XCircle } from "lucide-react";
 import { motion, useMotionValue } from "motion/react";
-import { forwardRef, useState } from "react";
+import { forwardRef, useState, useEffect } from "react";
 
 interface Photo {
     id: string;
@@ -12,10 +12,9 @@ interface Photo {
     isProcessing: boolean;
     message: string;
     isUploading: boolean;
-    // Store the photo's position after initial animation or drag
     position: { x: number; y: number };
     rotation: number;
-    hasAnimated: boolean; // Track if initial animation is complete
+    hasAnimated: boolean;
     response?: any;
 }
 
@@ -53,8 +52,15 @@ const PhotoCard = forwardRef<HTMLDivElement, PhotoCardProps>(
         ref
     ) => {
         const [isHovered, setIsHovered] = useState(false);
+        const [isMobile, setIsMobile] = useState(false);
+        const [isDragging, setIsDragging] = useState(false);
 
-        // const rotationOffset = (index - totalLength / 2) * 5;
+        useEffect(() => {
+            const checkMobile = () => setIsMobile(window.innerWidth < 768 || 'ontouchstart' in window);
+            checkMobile();
+            window.addEventListener('resize', checkMobile);
+            return () => window.removeEventListener('resize', checkMobile);
+        }, []);
 
         const displayURL = photo.editedURL || photo.originalURL;
         // Use motion values for smooth dragging
@@ -69,7 +75,12 @@ const PhotoCard = forwardRef<HTMLDivElement, PhotoCardProps>(
                 drag
                 dragConstraints={dragConstraints}
                 className="absolute w-32 h-44 md:w-40 md:h-56 xl:w-64 xl:h-80 cursor-grab active:cursor-grabbing pointer-events-auto group top-1/5 right-20 md:top-1/12 md:right-25"
+                onDragStart={() => setIsDragging(true)}
                 onDragEnd={(_, info) => {
+                    if (isMobile) {
+                        setIsDragging(false);
+                        setIsHovered(prev => !prev)
+                    }
                     const newX = photo.position.x + info.offset.x;
                     const newY = photo.position.y + info.offset.y;
                     onPositionChange(newX, newY);
@@ -152,8 +163,8 @@ const PhotoCard = forwardRef<HTMLDivElement, PhotoCardProps>(
                     }}
                     className="absolute -top-8 -translate-x-1/2 -translate-y-1/2 left-1/2 flex items-center justify-center gap-2 px-4 py-2 text-amber-900 bg-amber-100/90 backdrop-blur-md font-serif shadow-2xl cursor-pointer transition-all duration-300 rounded-full z-50 min-w-30 sm:min-w-35 h-10 sm:h-12 border border-amber-300/50 hover:bg-amber-200/95 hover:shadow-3xl hover:scale-105 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2"
                     animate={{
-                        opacity: isHovered && !isFlipped ? 1 : 0,
-                        y: isHovered && !isFlipped ? 0 : 10,
+                        opacity: (isHovered || (isMobile && isDragging)) && !isFlipped ? 1 : 0,
+                        y: (isHovered || (isMobile && isDragging)) && !isFlipped ? 0 : 10,
                     }}
                     transition={{
                         duration: 0.2,
@@ -266,7 +277,7 @@ const PhotoCard = forwardRef<HTMLDivElement, PhotoCardProps>(
                         e.stopPropagation();
                         onFlip();
                     }}
-                    className="cursor-pointer absolute -right-3 top-1/2 -translate-y-1/2 bg-white/50 backdrop-blur-sm p-2 sm:p-3 rounded-full shadow-xl hover:bg-white/80 transition-all z-201 min-w-10 min-h-10 sm:min-w-12 sm:min-h-12"
+                    className="cursor-pointer absolute -right-3 top-1/2 -translate-y-1/2 bg-white/50 backdrop-blur-sm p-2 sm:p-3 rounded-full shadow-xl hover:bg-white/80 transition-all z-201 min-w-10 min-h-10 sm:min-w-12 sm:min-h-12 flex items-center justify-center"
                     style={{ pointerEvents: "auto" }}
                     whileHover={{
                         opacity: 1,
@@ -274,7 +285,7 @@ const PhotoCard = forwardRef<HTMLDivElement, PhotoCardProps>(
                         scale: 1.1,
                     }}
                     animate={{
-                        opacity: isHovered ? 1 : 0, // Control opacity with state
+                        opacity: isHovered || (isMobile && isDragging) ? 1 : 0,
                     }}
                 >
                     {isFlipped ? <RotateCw className="w-4 h-4 sm:w-5 sm:h-5 text-gray-800 rotate-90" /> : <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5 text-gray-800 rotate-90" />}
@@ -288,8 +299,8 @@ const PhotoCard = forwardRef<HTMLDivElement, PhotoCardProps>(
                     }}
                     className="absolute -right-3 top-10/12 -translate-y-1/2 flex items-center justify-center p-2 sm:p-3 bg-amber-100/90 backdrop-blur-md shadow-2xl cursor-pointer transition-all duration-300 rounded-full z-50 border border-amber-300/50 hover:bg-amber-200/95 hover:shadow-3xl hover:scale-105 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2"
                     animate={{
-                        opacity: isHovered && !isFlipped ? 1 : 0,
-                        y: isHovered && !isFlipped ? 0 : 10,
+                        opacity: (isHovered || isMobile) && !isFlipped ? 1 : 0,
+                        y: (isHovered || isMobile) && !isFlipped ? 0 : 10,
                     }}
                     transition={{
                         duration: 0.2,
