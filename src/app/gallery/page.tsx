@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import ViewCard from "../../../components/ViewCard";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Loader } from "lucide-react";
+import { Camera, Loader } from "lucide-react";
 
 interface Photo {
     id: string;
@@ -94,49 +94,86 @@ const Gallery = () => {
     return (
         <div className="relative w-full min-h-screen overflow-hidden bg-linear-to-br from-amber-50 via-orange-100 to-yellow-50 p-4 sm:p-6 lg:p-8">
             {/* Gallery */}
-            <div className="absolute top-5 md:top-10 left-4 z-10">
+            <div className="absolute top-5 md:top-5 left-4 z-10">
                 <Link
                     href="/"
-                    className="hidden md:flex px-6 py-3 bg-amber-100 text-gray-900 border-2 border-amber-300 rounded-lg font-serif shadow-xl hover:bg-amber-200 hover:shadow-2xl hover:scale-105 cursor-pointer transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                    className="hidden md:flex px-4 py-3 bg-amber-100 text-gray-900 border-2 border-amber-300 rounded-lg font-serif shadow-xl hover:bg-amber-200 hover:shadow-2xl hover:scale-105 cursor-pointer transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-amber-400"
                 >
-                    <span className="mr-2">📸</span>
+                    <Camera className="w-5 h-5 mx-2" />
                     <span>Instant Camera</span>
                 </Link>
                 <Link
                     href="/"
-                    className="md:hidden flex px-2 pl-4 py-3 bg-amber-100 text-gray-900 border-2 border-amber-300 rounded-lg font-serif shadow-xl hover:bg-amber-200 hover:shadow-2xl hover:scale-105 cursor-pointer transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                    className="md:hidden flex px-3 py-3 bg-amber-100 text-gray-900 border-2 border-amber-300 rounded-lg font-serif shadow-xl hover:bg-amber-200 hover:shadow-2xl hover:scale-105 cursor-pointer transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-amber-400"
                 >
-                    <span className="mr-2">📸</span>
+                    <Camera className="w-5 h-5" />
                 </Link>
             </div>
-            <header className="text-center mb-25">
+            <header className="text-center my-20">
                 <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-amber-800 mb-2 drop-shadow-lg">Photo Gallery</h1>
                 <p className="text-orange-700 text-sm sm:text-base font-medium tracking-wide">Explore your retro camera captures</p>
             </header>
-            {photos.length === 0 ? (
-                <div className="flex items-center justify-center h-64">
-                    <p className="text-gray-700 text-lg bg-white/70 backdrop-blur-sm rounded-lg px-4 py-2 shadow-md">No photos available. Start capturing!</p>
-                </div>
-            ) : (
-                <motion.div
-                    className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-16"
-                    variants={containerVariants}
-                    initial="hidden"
-                    animate="visible"
-                >
-                    {photos.map((photo) => (
-                        <motion.div key={photo.id} variants={itemVariants}>
-                            <ViewCard
-                                photo={photo}
-                                isFlipped={flippedPhotos.has(photo.id)}
-                                onFlip={() => toggleFlip(photo.id)}
-                            />
-                        </motion.div>
-                    ))}
-                </motion.div>
-            )}
-            <footer className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-amber-800 text-xs font-semibold">
-                © 2025 Retro Camera App
+            <div className="flex items-center justify-center mx-auto">
+
+                {Array.isArray(photos) && photos.length === 0 || !photos ? (
+                    <motion.div
+                        className="flex items-center justify-center h-64"
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.5, ease: "easeOut" }}
+                    >
+                        <div className="flex flex-col gap-4 items-center justify-center text-center max-w-md">
+                            <div className="relative">
+                                <Camera className="w-16 h-16 text-amber-600 animate-pulse" />
+                                <div className="absolute inset-0 bg-amber-200 rounded-full opacity-20 animate-ping"></div>
+                            </div>
+                            <p className="text-lg text-amber-900 font-medium leading-relaxed">
+                                Your gallery is empty. Time to capture some retro memories!
+                            </p>
+                            <Link
+                                href="/"
+                                className="flex items-center gap-2 px-8 py-4 bg-linear-to-r from-amber-100 to-orange-100 text-amber-900 border-2 border-amber-300 rounded-xl shadow-lg tracking-wider hover:shadow-2xl hover:scale-105 cursor-pointer transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-amber-400 hover:from-amber-200 hover:to-orange-200"
+                            >
+                                <Camera className="w-6 h-6" />
+                                <span className="text-base font-semibold">Start Capturing</span>
+                            </Link>
+                        </div>
+                    </motion.div>
+                ) : (
+                    <motion.div
+                        className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-44 sm:mb-28 sm:gap-y-20"
+                        variants={containerVariants}
+                        initial="hidden"
+                        animate="visible"
+                    >
+                        {photos.map((photo) => (
+                            <motion.div key={photo.id} variants={itemVariants}>
+                                <ViewCard
+                                    photo={photo}
+                                    isFlipped={flippedPhotos.has(photo.id)}
+                                    onFlip={() => toggleFlip(photo.id)}
+                                />
+                            </motion.div>
+                        ))}
+                    </motion.div>
+                )}
+            </div>
+
+            <footer className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-amber-800 text-xs font-medium flex flex-col items-center text-center gap-1 bg-white/30 backdrop-blur-md rounded-xl px-6 py-3 shadow-lg border border-amber-200/60 transition-all duration-300 hover:bg-white/40 hover:shadow-xl">
+                <span className="font-serif text-sm tracking-wide text-nowrap">
+                    © 2025 Retro Camera
+                </span>
+                <span className="font-serif text-xs">
+                    Designed by{" "}
+                    <a
+                        href="https://rohitkhatri.vercel.app/"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-amber-900 hover:text-amber-700 underline decoration-amber-400 decoration-2 underline-offset-2 hover:decoration-amber-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 rounded-sm"
+                    >
+                        Rohit Khatri
+                    </a>
+                </span>
             </footer>
         </div>
     );
