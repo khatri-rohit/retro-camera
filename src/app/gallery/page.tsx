@@ -85,7 +85,7 @@ const Gallery = () => {
 
     if (error) {
         return (
-            <div className="flex items-center justify-center w-full h-screen bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50">
+            <div className="flex items-center justify-center w-full h-screen bg-linear-to-br from-red-50 via-orange-50 to-yellow-50">
                 <div className="text-xl text-red-700">{error}</div>
             </div>
         );

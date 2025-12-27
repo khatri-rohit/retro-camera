@@ -32,7 +32,7 @@ export default function InstantCameraCard() {
 
   const [demoData, setDemoData] = useState<Photo[]>([
     {
-      id: "photo-22",
+      id: `demo-${Date.now() + 100}`,
       blob: null,
       originalURL: '/self.jpg ',
       editedURL: null,
@@ -44,7 +44,7 @@ export default function InstantCameraCard() {
       hasAnimated: false,
     },
     {
-      id: "photo-16755891221797",
+      id: `demo-${Date.now() + 1000}`,
       blob: null,
       originalURL: '/self1jfif.jfif ',
       editedURL: null,
@@ -56,7 +56,7 @@ export default function InstantCameraCard() {
       hasAnimated: false,
     },
     {
-      id: "photo-11111122111",
+      id: `demo-${Date.now() + 1001}`,
       blob: null,
       originalURL: '/self2jfif.jfif ',
       editedURL: null,
