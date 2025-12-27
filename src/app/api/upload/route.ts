@@ -3,6 +3,8 @@ import * as admin from "firebase-admin";
 import { getFirestore } from "firebase-admin/firestore";
 import { NextRequest, NextResponse } from "next/server";
 import { RateLimiterMemory } from "rate-limiter-flexible";
+import DOMPurify from "dompurify";
+import { JSDOM } from "jsdom";
 
 const serviceAccount = {
   projectId: process.env.GOOGLE_APPLICATION_CREDENTIALS_PROJECT_ID as string,
@@ -39,6 +41,10 @@ const opts = {
 
 const rateLimiter = new RateLimiterMemory(opts);
 
+// Setup DOMPurify for server-side
+const window = new JSDOM("").window;
+const DOMPurifyServer = DOMPurify(window);
+
 export async function POST(req: NextRequest) {
   const ip = await getUserIP();
   try {
@@ -65,10 +71,70 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData();
     const file = formData.get("file") as File;
     const photoData = formData.get("photo") as string;
-    const photo = JSON.parse(photoData);
 
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
+    }
+
+    // Check file size (max 10MB)
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      return NextResponse.json(
+        { error: "File too large. Max size is 10MB." },
+        { status: 400 }
+      );
+    }
+
+    // Parse and validate photo data
+    let photo;
+    try {
+      photo = JSON.parse(photoData);
+    } catch {
+      return NextResponse.json(
+        { error: "Invalid photo data format" },
+        { status: 400 }
+      );
+    }
+
+    // Validate photo schema
+    if (!photo || typeof photo !== "object") {
+      return NextResponse.json(
+        { error: "Invalid photo data" },
+        { status: 400 }
+      );
+    }
+
+    if (!photo.id || typeof photo.id !== "string" || photo.id.length > 100) {
+      return NextResponse.json({ error: "Invalid photo ID" }, { status: 400 });
+    }
+
+    if (!photo.message || typeof photo.message !== "string") {
+      return NextResponse.json({ error: "Invalid message" }, { status: 400 });
+    }
+
+    // Sanitize message
+    const sanitizedMessage = DOMPurifyServer.sanitize(photo.message, {
+      ALLOWED_TAGS: [],
+    }).substring(0, 500); // Max 500 chars, no HTML
+
+    if (
+      !photo.position ||
+      typeof photo.position !== "object" ||
+      typeof photo.position.x !== "number" ||
+      typeof photo.position.y !== "number"
+    ) {
+      return NextResponse.json(
+        { error: "Invalid position data" },
+        { status: 400 }
+      );
+    }
+
+    if (
+      typeof photo.rotation !== "number" ||
+      photo.rotation < -180 ||
+      photo.rotation > 180
+    ) {
+      return NextResponse.json({ error: "Invalid rotation" }, { status: 400 });
     }
 
     const bytes = await file.arrayBuffer();
@@ -77,6 +143,7 @@ export async function POST(req: NextRequest) {
     const filename = `photos/${photo.id}-${Date.now()}.jpg`;
     const fileRef = storage.file(filename);
 
+    // Upload to storage first
     await fileRef.save(buffer, {
       metadata: {
         contentType: file.type,
@@ -91,14 +158,32 @@ export async function POST(req: NextRequest) {
 
     const publicUrl = `https://storage.googleapis.com/${storage.name}/${filename}`;
 
-    await db.collection("photos").doc(photo.id).set({
+    // Now save to Firestore using batch for atomic operation
+    const batch = db.batch();
+    const photoRef = db.collection("photos").doc(photo.id);
+
+    batch.set(photoRef, {
       id: photo.id,
       imageUrl: publicUrl,
-      message: photo.message,
+      message: sanitizedMessage,
       position: photo.position,
       rotation: photo.rotation,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
+
+    try {
+      await batch.commit();
+    } catch (firestoreError) {
+      // Cleanup: delete the uploaded file if Firestore batch fails
+      try {
+        await fileRef.delete();
+        console.log("Cleaned up storage file due to Firestore batch error");
+      } catch (cleanupError) {
+        console.error("Failed to cleanup storage file:", cleanupError);
+      }
+      throw firestoreError; // Re-throw to handle in outer catch
+    }
+
     console.log("Upload Success");
     return NextResponse.json({
       message: "File uploaded successfully!",

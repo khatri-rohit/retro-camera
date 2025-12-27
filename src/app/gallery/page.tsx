@@ -50,6 +50,22 @@ const Gallery = () => {
 
     useEffect(() => {
         const fetchPhotos = async () => {
+            const cacheKey = 'gallery_photos';
+            const cacheExpiryKey = 'gallery_photos_expiry';
+            const now = Date.now();
+            const expiryTime = 5 * 60 * 1000; // 5 minutes
+
+            // Check session storage
+            const cachedData = sessionStorage.getItem(cacheKey);
+            const cachedExpiry = sessionStorage.getItem(cacheExpiryKey);
+
+            if (cachedData && cachedExpiry && now < parseInt(cachedExpiry)) {
+                // Use cached data
+                setPhotos(JSON.parse(cachedData));
+                setLoading(false);
+                return;
+            }
+
             try {
                 setLoading(true);
                 const res = await fetch("/api/gallery");
@@ -62,6 +78,10 @@ const Gallery = () => {
                 setPhotos(data.data);
                 setLoading(false);
                 setError(null);
+
+                // Store in session storage
+                sessionStorage.setItem(cacheKey, JSON.stringify(data.data));
+                sessionStorage.setItem(cacheExpiryKey, (now + expiryTime).toString());
             } catch (error) {
                 console.error("Fetch error:", error);
                 setError("Failed to load photos.");

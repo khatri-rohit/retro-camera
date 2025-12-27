@@ -256,6 +256,12 @@ export default function InstantCameraCard() {
         );
       }
 
+      // Clear gallery cache to show new data
+      if (data.success) {
+        sessionStorage.removeItem('gallery_photos');
+        sessionStorage.removeItem('gallery_photos_expiry');
+      }
+
       if (!data.success && data.status === 429) {
         setError("Your Today's upload limit has been reached. Please try again tomorrow.");
       }

@@ -1,6 +1,9 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import * as admin from "firebase-admin";
 import { getFirestore } from "firebase-admin/firestore";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { getUserIP } from "@/utils/ip";
+import { RateLimiterMemory } from "rate-limiter-flexible";
 
 const serviceAccount = {
   projectId: process.env.GOOGLE_APPLICATION_CREDENTIALS_PROJECT_ID as string,
@@ -29,23 +32,83 @@ if (!admin.apps.length) {
 
 const db = getFirestore();
 
-export async function GET() {
+const opts = {
+  points: 100, // 100 points
+  duration: 60 * 15, // 15 minutes
+};
+
+const rateLimiter = new RateLimiterMemory(opts);
+
+export async function GET(req: NextRequest) {
+  const ip = await getUserIP();
+  try {
+    const rateLimitRes = await rateLimiter.consume(ip, 1);
+    console.log(rateLimitRes);
+    if (rateLimitRes.remainingPoints === 0) {
+      console.log("Rate limit exceeded for IP:", ip);
+      return NextResponse.json(
+        {
+          error: "Rate limit exceeded",
+          success: false,
+          status: 429,
+        },
+        { status: 429 }
+      );
+    }
+  } catch (error) {
+    console.error("Error Rate limit", error);
+    return NextResponse.json(
+      {
+        error: "Rate limit exceeded",
+        success: false,
+        status: 429,
+      },
+      { status: 429 }
+    );
+  }
+
   try {
     const photos = await db
       .collection("photos")
       .orderBy("createdAt", "desc")
+      .limit(50) // Limit to 50 photos for performance
       .get();
+
+    // Validate and sanitize data
+    const validatedData = photos.docs
+      .map((doc) => {
+        const data = doc.data();
+        // Validate required fields
+        if (
+          !data.id ||
+          !data.imageUrl ||
+          !data.message ||
+          !data.position ||
+          typeof data.rotation !== "number"
+        ) {
+          console.warn(`Invalid photo data for doc ${doc.id}, skipping`);
+          return null;
+        }
+        // Sanitize message (though it should be sanitized on upload)
+        const sanitizedMessage =
+          typeof data.message === "string"
+            ? data.message.substring(0, 500)
+            : "";
+
+        return {
+          id: doc.id,
+          imageUrl: data.imageUrl,
+          message: sanitizedMessage,
+          position: data.position,
+          rotation: data.rotation,
+          createdAt: data.createdAt,
+        };
+      })
+      .filter(Boolean); // Remove null entries
 
     return NextResponse.json({
       message: "Photos retrieved successfully!",
-      data: photos.docs.map((doc) => ({
-        id: doc.id,
-        imageUrl: doc.data().imageUrl,
-        message: doc.data().message,
-        position: doc.data().position,
-        rotation: doc.data().rotation,
-        createdAt: doc.data().createdAt,
-      })),
+      data: validatedData,
     });
   } catch (error) {
     console.error("Error retrieving photos:", error);
