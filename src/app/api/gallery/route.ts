@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
   const ip = await getUserIP();
   try {
     const rateLimitRes = await rateLimiter.consume(ip, 1);
-    console.log(rateLimitRes);
+    // console.log(rateLimitRes);
     if (rateLimitRes.remainingPoints === 0) {
       console.log("Rate limit exceeded for IP:", ip);
       return NextResponse.json(
@@ -81,8 +81,8 @@ export async function GET(req: NextRequest) {
         if (
           !data.id ||
           !data.imageUrl ||
-          !data.message ||
-          !data.position ||
+          // !data.message ||
+          // !data.position ||
           typeof data.rotation !== "number"
         ) {
           console.warn(`Invalid photo data for doc ${doc.id}, skipping`);

@@ -1,6 +1,6 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { CheckCircle, Download, Loader2, RotateCcw, RotateCw, Upload, XCircle } from "lucide-react";
+import { CheckCircle, Download, Loader2, Pin, RotateCcw, RotateCw, XCircle } from "lucide-react";
 import { motion, useMotionValue } from "motion/react";
 import { forwardRef, useState, useEffect } from "react";
 
@@ -202,8 +202,8 @@ const PhotoCard = forwardRef<HTMLDivElement, PhotoCardProps>(
                         </div>
                     ) : (
                         <>
-                            <Upload className="w-4 h-4 text-amber-800" />
-                            <span className="text-xs font-medium">Share</span>
+                            <Pin className="w-4 h-4 text-amber-800" />
+                            <span className="text-xs font-medium tracking-wide text-nowrap">Pin with others</span>
                         </>
                     )}
                 </motion.button>
