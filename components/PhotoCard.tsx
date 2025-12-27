@@ -1,4 +1,5 @@
-import { Loader2, RotateCcw, RotateCw, Upload } from "lucide-react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { CheckCircle, Loader2, RotateCcw, RotateCw, Upload, XCircle } from "lucide-react";
 import { motion, useMotionValue } from "motion/react";
 import { useState } from "react";
 
@@ -14,14 +15,13 @@ interface Photo {
     position: { x: number; y: number };
     rotation: number;
     hasAnimated: boolean; // Track if initial animation is complete
+    response?: any;
 }
 
 
 interface PhotoCardProps {
     photo: Photo;
     dragConstraints: React.RefObject<HTMLDivElement | null>;
-    index: number;
-    totalLength: number;
     isFlipped: boolean;
     onFlip: () => void;
     onMessageChange: (msg: string) => void;
@@ -33,12 +33,10 @@ interface PhotoCardProps {
 
 export default function PhotoCard({
     photo,
-    // index,
     isFlipped,
     onFlip,
     onMessageChange,
     dragConstraints,
-    // totalLength,
     onAnimationComplete,
     onPositionChange,
     onRotationChange,
@@ -153,16 +151,31 @@ export default function PhotoCard({
                 }}
                 disabled={photo.isUploading}
             >
-
-                {photo.isUploading ? (
+                {photo.response && photo.response.data.id === photo.id ? (
                     <div className="flex items-center justify-center w-full h-full">
-                        <Loader2 className="text-gray-800 animate-spin" />
+                        {photo.response.success ? (
+                            <div className="flex items-center justify-center w-full h-full gap-2">
+                                <CheckCircle className="w-5 h-5 text-green-600 animate-bounce" />
+                                <span className="text-xs text-green-600 font-semibold">Shared with the world! 🌍</span>
+                            </div>
+                        ) : (
+                            <div className="flex items-center justify-center w-full h-full gap-2">
+                                <XCircle className="w-5 h-5 text-red-600 animate-pulse" />
+                                <span className="text-xs text-red-600 font-semibold">Oops! Try again later 😔</span>
+                            </div>
+                        )}
                     </div>
                 ) : (
-                    <>
-                        <span className="text-sm">Share it with the world</span>
-                        <Upload className="w-5 h-5 text-gray-800 rotate-90" />
-                    </>
+                    photo.isUploading ? (
+                        <div className="flex items-center justify-center w-full h-full">
+                            <Loader2 className="text-gray-800 animate-spin" />
+                        </div>
+                    ) : (
+                        <>
+                            <span className="text-sm">Share it with the world</span>
+                            <Upload className="w-5 h-5 text-gray-800 rotate-90" />
+                        </>
+                    )
                 )}
             </motion.button>
 

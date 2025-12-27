@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import ViewCard from "../../../components/ViewCard";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { Loader } from "lucide-react";
 
 interface Photo {
     id: string;
@@ -73,8 +74,11 @@ const Gallery = () => {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center w-full h-screen bg-gradient-to-br from-amber-100 via-orange-50 to-yellow-50">
-                <div className="text-xl text-amber-900 animate-pulse">Loading gallery...</div>
+            <div className="flex items-center justify-center w-full h-screen bg-linear-to-br from-amber-100 via-orange-50 to-yellow-50">
+                <div className="flex flex-col gap-2 items-center justify-center text-xl text-amber-900">
+                    <Loader className="animate-spin" />
+                    <p className="text-sm">Loading gallery...</p>
+                </div>
             </div>
         );
     }
@@ -88,15 +92,21 @@ const Gallery = () => {
     }
 
     return (
-        <div className="relative w-full min-h-screen overflow-hidden bg-gradient-to-br from-amber-50 via-orange-100 to-yellow-50 p-4 sm:p-6 lg:p-8">
+        <div className="relative w-full min-h-screen overflow-hidden bg-linear-to-br from-amber-50 via-orange-100 to-yellow-50 p-4 sm:p-6 lg:p-8">
             {/* Gallery */}
-            <div className="absolute top-10 left-4 z-10">
+            <div className="absolute top-5 md:top-10 left-4 z-10">
                 <Link
                     href="/"
-                    className="px-6 py-3 bg-amber-100 text-gray-900 border-2 border-amber-300 rounded-lg font-serif shadow-xl hover:bg-amber-200 hover:shadow-2xl hover:scale-105 cursor-pointer transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                    className="hidden md:flex px-6 py-3 bg-amber-100 text-gray-900 border-2 border-amber-300 rounded-lg font-serif shadow-xl hover:bg-amber-200 hover:shadow-2xl hover:scale-105 cursor-pointer transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-amber-400"
                 >
                     <span className="mr-2">📸</span>
-                    Instant Camera
+                    <span>Instant Camera</span>
+                </Link>
+                <Link
+                    href="/"
+                    className="md:hidden flex px-2 pl-4 py-3 bg-amber-100 text-gray-900 border-2 border-amber-300 rounded-lg font-serif shadow-xl hover:bg-amber-200 hover:shadow-2xl hover:scale-105 cursor-pointer transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                >
+                    <span className="mr-2">📸</span>
                 </Link>
             </div>
             <header className="text-center mb-25">
@@ -109,7 +119,7 @@ const Gallery = () => {
                 </div>
             ) : (
                 <motion.div
-                    className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 sm:gap-x-56"
+                    className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-16"
                     variants={containerVariants}
                     initial="hidden"
                     animate="visible"

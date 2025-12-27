@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
@@ -20,6 +21,7 @@ interface Photo {
   position: { x: number; y: number };
   rotation: number;
   hasAnimated: boolean;
+  response?: any;
 }
 
 
@@ -30,7 +32,7 @@ export default function InstantCameraCard() {
 
   const [demoData, setDemoData] = useState<Photo[]>([
     {
-      id: "photo-1675589797",
+      id: "photo-22",
       blob: null,
       originalURL: '/self.jpg ',
       editedURL: null,
@@ -42,7 +44,7 @@ export default function InstantCameraCard() {
       hasAnimated: false,
     },
     {
-      id: "photo-167558911797",
+      id: "photo-16755891221797",
       blob: null,
       originalURL: '/self1jfif.jfif ',
       editedURL: null,
@@ -54,7 +56,7 @@ export default function InstantCameraCard() {
       hasAnimated: false,
     },
     {
-      id: "photo-111111111",
+      id: "photo-11111122111",
       blob: null,
       originalURL: '/self2jfif.jfif ',
       editedURL: null,
@@ -211,19 +213,23 @@ export default function InstantCameraCard() {
 
       const data = await res.json();
       console.log("Upload successful:", data);
-      if (photos.length < 1) {
-        setDemoData((prev) =>
-          prev.map((p) =>
-            p.id === photo.id ? { ...p, isUploading: false } : p
-          )
-        );
-      } else {
-        setPhotos((prev) =>
-          prev.map((p) =>
-            p.id === photo.id ? { ...p, isUploading: false } : p
-          )
-        );
+
+      if (data.success) {
+        if (photos.length < 1) {
+          setDemoData((prev) =>
+            prev.map((p) =>
+              p.id === photo.id ? { ...p, isUploading: false, response: data } : p
+            )
+          );
+        } else {
+          setPhotos((prev) =>
+            prev.map((p) =>
+              p.id === photo.id ? { ...p, isUploading: false, response: data } : p
+            )
+          );
+        }
       }
+
       return data;
     } catch (error) {
       if (photos.length < 1) {
@@ -240,6 +246,7 @@ export default function InstantCameraCard() {
         );
       }
       console.error("Upload error:", error);
+      console.error("Upload error details:", (error as any).details);
       throw error;
     }
   };
@@ -338,7 +345,7 @@ export default function InstantCameraCard() {
       <AnimatePresence>
         {isCapturing && (
           <motion.div
-            className="fixed inset-0 bg-white pointer-events-none z-[9999]"
+            className="fixed inset-0 bg-white pointer-events-none z-9999"
             initial={{ opacity: 0 }}
             animate={{ opacity: [0, 1, 0] }}
             exit={{ opacity: 0 }}
@@ -377,7 +384,7 @@ export default function InstantCameraCard() {
         >
         </button>
 
-        <div className="absolute -bottom-20 -right-12 -translate-x-1/2 z-50 w-[300px]">
+        <div className="absolute -bottom-20 -right-12 -translate-x-1/2 z-50 w-75">
           <FilterSilder activeIndex={activeIndex} setActiveIndex={setActiveIndex} capture={capture} />
         </div>
       </div>
@@ -405,14 +412,12 @@ export default function InstantCameraCard() {
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <AnimatePresence>
           {photos.length < 1 ? (
-            demoData.map((photo, index) => {
+            demoData.map((photo) => {
               return (
                 <PhotoCard
                   key={photo.id}
                   photo={photo}
-                  index={index}
                   uploadPhotoCard={uploadPhotoCard}
-                  totalLength={photos.length}
                   dragConstraints={dragContainer}
                   isFlipped={flippedPhotos.has(photo.id)}
                   onFlip={() => toggleFlip(photo.id)}
@@ -424,14 +429,12 @@ export default function InstantCameraCard() {
               );
             })
           ) : (
-            photos.map((photo, index) => {
+            photos.map((photo) => {
               return (
                 <PhotoCard
                   key={photo.id}
                   photo={photo}
-                  index={index}
                   uploadPhotoCard={uploadPhotoCard}
-                  totalLength={photos.length}
                   dragConstraints={dragContainer}
                   isFlipped={flippedPhotos.has(photo.id)}
                   onFlip={() => toggleFlip(photo.id)}

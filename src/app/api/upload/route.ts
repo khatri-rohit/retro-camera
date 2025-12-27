@@ -69,9 +69,10 @@ export async function POST(req: NextRequest) {
       rotation: photo.rotation,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
-
+    console.log("Upload Success");
     return NextResponse.json({
       message: "File uploaded successfully!",
+      success: true,
       data: {
         id: photo.id,
         url: publicUrl,
@@ -80,7 +81,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error("Error uploading file:", error);
     return NextResponse.json(
-      { error: "Something went wrong!", details: error },
+      { error: "Something went wrong!", success: false, details: error },
       { status: 500 }
     );
   }

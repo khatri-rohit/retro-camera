@@ -31,7 +31,10 @@ const db = getFirestore();
 
 export async function GET() {
   try {
-    const photos = await db.collection("photos").get();
+    const photos = await db
+      .collection("photos")
+      .orderBy("createdAt", "desc")
+      .get();
 
     return NextResponse.json({
       message: "Photos retrieved successfully!",
