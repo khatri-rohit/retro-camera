@@ -1,10 +1,21 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+// app/api/upload/route.ts
 import { getUserIP } from "@/utils/ip";
 import * as admin from "firebase-admin";
 import { getFirestore } from "firebase-admin/firestore";
 import { NextRequest, NextResponse } from "next/server";
 import { RateLimiterMemory } from "rate-limiter-flexible";
-import DOMPurify from "dompurify";
-import { JSDOM } from "jsdom";
+
+// Simple sanitization function (no JSDOM needed)
+function sanitizeMessage(message: string): string {
+  if (!message || typeof message !== "string") return "";
+
+  return message
+    .replace(/<[^>]*>/g, "") // Remove HTML tags
+    .replace(/[<>\"']/g, "") // Remove special chars
+    .trim()
+    .substring(0, 500); // Max 500 chars
+}
 
 const serviceAccount = {
   projectId: process.env.GOOGLE_APPLICATION_CREDENTIALS_PROJECT_ID as string,
@@ -34,37 +45,30 @@ if (!admin.apps.length) {
 const storage = admin.storage().bucket();
 const db = getFirestore();
 
-const opts = {
-  points: 20, // 20 points
-  duration: 60 * 60 * 60 * 24, // 1 day
-};
+const rateLimiter = new RateLimiterMemory({
+  points: 20,
+  duration: 60 * 60 * 24, // 24 hours
+});
 
-const rateLimiter = new RateLimiterMemory(opts);
-
-// DOMPurify for server-side
-const window = new JSDOM("").window;
-const DOMPurifyServer = DOMPurify(window);
+// Explicitly set Node.js runtime
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   const ip = await getUserIP();
+
   try {
-    const rateLimitRes = await rateLimiter.consume(ip, 2);
-    console.log(rateLimitRes);
-    if (rateLimitRes.remainingPoints === 0) {
-      console.log("Rate limit exceeded for IP:", ip);
-      return NextResponse.json({
-        error: "Rate limit exceeded",
+    await rateLimiter.consume(ip, 2);
+  } catch (error) {
+    console.error("Rate limit exceeded for IP:", ip);
+    return NextResponse.json(
+      {
+        error: "Rate limit exceeded. Please try again tomorrow.",
         success: false,
         status: 429,
-      });
-    }
-  } catch (error) {
-    console.error("Error Rate limit", error);
-    return NextResponse.json({
-      error: "Rate limit exceeded",
-      success: false,
-      status: 429,
-    });
+      },
+      { status: 429 }
+    );
   }
 
   try {
@@ -73,14 +77,26 @@ export async function POST(req: NextRequest) {
     const photoData = formData.get("photo") as string;
 
     if (!file) {
-      return NextResponse.json({ error: "No file provided" }, { status: 400 });
+      return NextResponse.json(
+        { error: "No file provided", success: false },
+        { status: 400 }
+      );
     }
 
-    // Check file size (max 10MB)
-    const maxSize = 10 * 1024 * 1024; // 10MB
+    // Validate file size (max 10MB)
+    const maxSize = 10 * 1024 * 1024;
     if (file.size > maxSize) {
       return NextResponse.json(
-        { error: "File too large. Max size is 10MB." },
+        { error: "File too large. Max size is 10MB.", success: false },
+        { status: 400 }
+      );
+    }
+
+    // Validate file type
+    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+      return NextResponse.json(
+        { error: "Invalid file type. Only images allowed.", success: false },
         { status: 400 }
       );
     }
@@ -91,39 +107,36 @@ export async function POST(req: NextRequest) {
       photo = JSON.parse(photoData);
     } catch {
       return NextResponse.json(
-        { error: "Invalid photo data format" },
+        { error: "Invalid photo data format", success: false },
         { status: 400 }
       );
     }
 
-    if (!photo || typeof photo !== "object") {
+    // Validation checks
+    if (!photo?.id || typeof photo.id !== "string" || photo.id.length > 100) {
       return NextResponse.json(
-        { error: "Invalid photo data" },
+        { error: "Invalid photo ID", success: false },
         { status: 400 }
       );
-    }
-
-    if (!photo.id || typeof photo.id !== "string" || photo.id.length > 100) {
-      return NextResponse.json({ error: "Invalid photo ID" }, { status: 400 });
     }
 
     if (photo.message && typeof photo.message !== "string") {
-      return NextResponse.json({ error: "Invalid message" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid message", success: false },
+        { status: 400 }
+      );
     }
 
-    // Sanitize message
-    const sanitizedMessage = DOMPurifyServer.sanitize(photo.message, {
-      ALLOWED_TAGS: [],
-    }).substring(0, 500); // Max 500 chars
+    // Sanitize message (lightweight approach)
+    const sanitizedMessage = sanitizeMessage(photo.message || "");
 
     if (
       !photo.position ||
-      typeof photo.position !== "object" ||
       typeof photo.position.x !== "number" ||
       typeof photo.position.y !== "number"
     ) {
       return NextResponse.json(
-        { error: "Invalid position data" },
+        { error: "Invalid position data", success: false },
         { status: 400 }
       );
     }
@@ -133,16 +146,20 @@ export async function POST(req: NextRequest) {
       photo.rotation < -180 ||
       photo.rotation > 180
     ) {
-      return NextResponse.json({ error: "Invalid rotation" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid rotation", success: false },
+        { status: 400 }
+      );
     }
 
+    // Process file
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
     const filename = `photos/${photo.id}-${Date.now()}.jpg`;
     const fileRef = storage.file(filename);
 
-    // Upload to storage first
+    // Upload to Firebase Storage
     await fileRef.save(buffer, {
       metadata: {
         contentType: file.type,
@@ -157,10 +174,10 @@ export async function POST(req: NextRequest) {
 
     const publicUrl = `https://storage.googleapis.com/${storage.name}/${filename}`;
 
-    const batch = db.batch();
+    // Save to Firestore
     const photoRef = db.collection("photos").doc(photo.id);
 
-    batch.set(photoRef, {
+    await photoRef.set({
       id: photo.id,
       imageUrl: publicUrl,
       message: sanitizedMessage,
@@ -169,19 +186,8 @@ export async function POST(req: NextRequest) {
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    try {
-      await batch.commit();
-    } catch (firestoreError) {
-      try {
-        await fileRef.delete();
-        console.log("Cleaned up storage file due to Firestore batch error");
-      } catch (cleanupError) {
-        console.error("Failed to cleanup storage file:", cleanupError);
-      }
-      throw firestoreError;
-    }
+    console.log("Upload successful:", photo.id);
 
-    console.log("Upload Success");
     return NextResponse.json({
       message: "File uploaded successfully!",
       success: true,
@@ -191,9 +197,14 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Error uploading file:", error);
+    console.error("Upload error:", error);
     return NextResponse.json(
-      { error: "Something went wrong!", success: false, details: error },
+      {
+        error: "Upload failed. Please try again.",
+        success: false,
+        details:
+          process.env.NODE_ENV === "development" ? String(error) : undefined,
+      },
       { status: 500 }
     );
   }
