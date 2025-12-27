@@ -159,6 +159,10 @@ const PhotoCard = forwardRef<HTMLDivElement, PhotoCardProps>(
                 <motion.button
                     onClick={(e) => {
                         e.stopPropagation();
+                        // If photo is already shared, do nothing
+                        if (photo.response.success) {
+                            return;
+                        }
                         uploadPhotoCard(photo);
                     }}
                     className="absolute -top-8 -translate-x-1/2 -translate-y-1/2 left-1/2 flex items-center justify-center gap-2 px-4 py-2 text-amber-900 bg-amber-100/90 backdrop-blur-md font-serif shadow-2xl cursor-pointer transition-all duration-300 rounded-full z-50 min-w-30 sm:min-w-35 h-10 sm:h-12 border border-amber-300/50 hover:bg-amber-200/95 hover:shadow-3xl hover:scale-105 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2"
@@ -185,8 +189,8 @@ const PhotoCard = forwardRef<HTMLDivElement, PhotoCardProps>(
                         <div className="flex items-center justify-center w-full h-full gap-2">
                             {photo.response.success ? (
                                 <>
-                                    <CheckCircle className="w-5 h-5 text-green-700 animate-pulse" />
-                                    <span className="text-xs font-medium text-green-800">Shared! 🌍</span>
+                                    <CheckCircle className="w-5 h-5 text-slate-700 animate-pulse" />
+                                    <span className="text-xs font-medium text-gray-900">Shared! 🌍</span>
                                 </>
                             ) : (
                                 <>

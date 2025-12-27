@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid photo ID" }, { status: 400 });
     }
 
-    if (!photo.message || typeof photo.message !== "string") {
+    if (photo.message && typeof photo.message !== "string") {
       return NextResponse.json({ error: "Invalid message" }, { status: 400 });
     }
 
