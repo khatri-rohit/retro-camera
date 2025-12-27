@@ -1,8 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @next/next/no-img-element */
 import { useRef } from 'react';
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Pagination } from 'swiper/modules';
-import SwiperCore from 'swiper';
 import "swiper/css";
 import "swiper/css/pagination";
 import { availableFilters } from "./Filters";
@@ -13,45 +12,32 @@ interface FilterSilderProps {
     capture: () => void
 }
 
-const FilterSilder = ({ activeIndex, setActiveIndex, capture }: FilterSilderProps) => {
-    const swiperRef = useRef<SwiperCore | null>(null);
+function FilterSlider({ activeIndex, setActiveIndex, capture }: FilterSilderProps) {
+    const swiperRef = useRef<any>(null);
 
     return (
-        <div>
+        <div className="w-full">
             <Swiper
                 slidesPerView={3}
-                spaceBetween={30}
+                spaceBetween={20}
                 centeredSlides={true}
-                freeMode={true}
-                pagination={{
-                    clickable: false,
-                    enabled: false,
-                }}
-                modules={[Pagination]}
-                className="mySwiper"
-                onSlideChange={(swiper) => setActiveIndex(swiper.activeIndex)}
-                onSwiper={(swiper) => swiperRef.current = swiper}
+                className="pb-2!"
+                onSlideChange={(swiper: any) => setActiveIndex(swiper.activeIndex)}
+                onSwiper={(swiper: any) => (swiperRef.current = swiper)}
             >
                 {availableFilters.map((filter, index) => (
-                    <SwiperSlide key={index} >
+                    <SwiperSlide key={index}>
                         <div
-                            className="lens"
+                            className="flex flex-col items-center cursor-pointer transition-all duration-300"
                             style={{
                                 opacity: index === activeIndex ? 1 : 0.6,
-                                transform: index === activeIndex ? 'scale(1)' : 'scale(0.8)',
-                                transition: 'all 0.3s ease',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                textWrap: 'nowrap',
+                                transform: index === activeIndex ? 'scale(1)' : 'scale(0.85)',
                             }}
                             onClick={() => {
                                 if (index === activeIndex) {
                                     capture();
                                     return;
                                 }
-
                                 swiperRef.current?.slideTo(index);
                                 setActiveIndex(index);
                             }}
@@ -59,27 +45,25 @@ const FilterSilder = ({ activeIndex, setActiveIndex, capture }: FilterSilderProp
                             <img
                                 src={filter.src}
                                 alt={filter.alt}
+                                className="rounded-full object-cover transition-all duration-300"
                                 style={{
-                                    borderRadius: '50%',
-                                    width: '60px',
-                                    height: '60px',
-                                    objectFit: 'cover',
-                                    border: index === activeIndex ? '2px solid #fff' : 'none',
-                                    transition: 'all 0.3s ease',
+                                    width: index === activeIndex ? '56px' : '48px',
+                                    height: index === activeIndex ? '56px' : '48px',
+                                    border: index === activeIndex ? '2px solid #fff' : '2px solid transparent',
                                 }}
                             />
-                            <p className={`text-black text-sm text-center text-nowrap ${index === activeIndex ? 'font-semibold' : ''}`}>
+                            <p
+                                className={`text-black text-xs sm:text-sm mt-1 text-center whitespace-nowrap ${index === activeIndex ? 'font-semibold' : ''
+                                    }`}
+                            >
                                 {filter.alt}
                             </p>
                         </div>
                     </SwiperSlide>
                 ))}
             </Swiper>
-            {/* <div style={{ textAlign: 'center', marginTop: '10px' }}>
-                Center Slide Index: {activeIndex}
-            </div> */}
         </div>
     );
-};
+}
 
-export default FilterSilder;
+export default FilterSlider

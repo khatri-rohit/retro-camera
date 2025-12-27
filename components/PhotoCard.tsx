@@ -1,7 +1,8 @@
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { CheckCircle, Loader2, RotateCcw, RotateCw, Upload, XCircle } from "lucide-react";
+import { CheckCircle, Download, Loader2, RotateCcw, RotateCw, Upload, XCircle } from "lucide-react";
 import { motion, useMotionValue } from "motion/react";
-import { useState } from "react";
+import { forwardRef, useState } from "react";
 
 interface Photo {
     id: string;
@@ -29,238 +30,292 @@ interface PhotoCardProps {
     onAnimationComplete: () => void;
     onRotationChange: (rotation: number) => void;
     uploadPhotoCard: (photo: Photo) => void;
+    downloadPhoto: (photo: Photo) => void;
+    isDownloading: boolean;
 }
 
-export default function PhotoCard({
-    photo,
-    isFlipped,
-    onFlip,
-    onMessageChange,
-    dragConstraints,
-    onAnimationComplete,
-    onPositionChange,
-    onRotationChange,
-    uploadPhotoCard
-}: PhotoCardProps) {
-    const [isHovered, setIsHovered] = useState(false);
 
-    // const rotationOffset = (index - totalLength / 2) * 5;
+const PhotoCard = forwardRef<HTMLDivElement, PhotoCardProps>(
+    (
+        {
+            photo,
+            dragConstraints,
+            isFlipped,
+            onFlip,
+            onMessageChange,
+            onAnimationComplete,
+            onPositionChange,
+            onRotationChange,
+            uploadPhotoCard,
+            downloadPhoto,
+            isDownloading,
+        },
+        ref
+    ) => {
+        const [isHovered, setIsHovered] = useState(false);
 
-    const displayURL = photo.editedURL || photo.originalURL;
-    // Use motion values for smooth dragging
-    const x = useMotionValue(photo.position.x);
-    const y = useMotionValue(photo.position.y);
+        // const rotationOffset = (index - totalLength / 2) * 5;
 
-    return (
-        <motion.div
-            key={photo.id}
-            drag
-            dragConstraints={dragConstraints}
-            className="absolute w-64 h-80 cursor-grab active:cursor-grabbing pointer-events-auto group top-1/12 right-1/12"
-            onDragEnd={(_, info) => {
-                const newX = photo.position.x + info.offset.x;
-                const newY = photo.position.y + info.offset.y;
-                onPositionChange(newX, newY);
-            }}
-            onHoverStart={() => setIsHovered(true)}
-            onHoverEnd={() => setIsHovered(false)}
-            onClick={() => {
-                if (photo.rotation === 0) {
-                    onRotationChange(10);
-                } else if (photo.rotation === 10) {
-                    onRotationChange(-10);
-                } else {
-                    onRotationChange(0);
-                }
-            }}
-            initial={
-                !photo.hasAnimated
-                    ? {
-                        y: 350,
-                        rotate: 0,
-                        scale: 0.8,
-                    }
-                    : {
-                        // Already animated: use saved position
-                        x: photo.position.x,
-                        y: photo.position.y,
-                        rotate: photo.rotation,
-                        scale: 1,
-                    }
-            }
-            animate={{
-                x: photo.position.x,
-                y: photo.position.y,
-                rotate: photo.rotation,
-                scale: 1,
-                rotateY: isFlipped ? 180 : 0,
-            }}
-            transition={{
-                type: "spring",
-                mass: 0.8,
-                y: {
-                    type: "spring",
-                },
-                rotateY: {
-                    duration: 0.6,
-                    ease: "easeInOut",
-                },
-            }}
-            exit={{
-                opacity: 0,
-                scale: 0.5,
-                y: -200,
-                transition: { duration: 0.4 },
-            }}
-            onAnimationComplete={() => {
-                if (!photo.hasAnimated) {
-                    onAnimationComplete();
-                }
-            }}
-            style={{
-                transformStyle: "preserve-3d",
-                x,
-                y,
-            }}
-            whileHover={{
-                scale: 1.02,
-                zIndex: 200,
-                transition: { duration: 0.15 }
-            }}
-            whileTap={{
-                scale: 0.98,
-                cursor: "grabbing"
-            }}
-        >
-            {/* Share Button */}
-            <motion.button
-                onClick={(e) => {
-                    e.stopPropagation();
-                    uploadPhotoCard(photo);
+        const displayURL = photo.editedURL || photo.originalURL;
+        // Use motion values for smooth dragging
+        const x = useMotionValue(photo.position.x);
+        const y = useMotionValue(photo.position.y);
+
+        return (
+            <motion.div
+                key={photo.id}
+                ref={ref}
+                data-photo-id={photo.id}
+                drag
+                dragConstraints={dragConstraints}
+                className="absolute w-32 h-44 md:w-40 md:h-56 xl:w-64 xl:h-80 cursor-grab active:cursor-grabbing pointer-events-auto group top-1/5 right-20 md:top-1/12 md:right-25"
+                onDragEnd={(_, info) => {
+                    const newX = photo.position.x + info.offset.x;
+                    const newY = photo.position.y + info.offset.y;
+                    onPositionChange(newX, newY);
                 }}
-                className="absolute -top-6 -translate-x-1/2 -translate-y-1/2 left-1/2 flex gap-2 px-3 py-3 text-black bg-white/50 backdrop-blur-sm font-mono shadow-xl cursor-pointer transition-all rounded-full z-50 w-full perspective-none"
+                onHoverStart={() => setIsHovered(true)}
+                onHoverEnd={() => setIsHovered(false)}
+                onClick={() => {
+                    if (photo.rotation === 0) {
+                        onRotationChange(10);
+                    } else if (photo.rotation === 10) {
+                        onRotationChange(-10);
+                    } else {
+                        onRotationChange(0);
+                    }
+                }}
+                initial={
+                    !photo.hasAnimated
+                        ? {
+                            y: 350,
+                            rotate: 0,
+                            scale: 0.8,
+                        }
+                        : {
+                            // Already animated: use saved position
+                            x: photo.position.x,
+                            y: photo.position.y,
+                            rotate: photo.rotation,
+                            scale: 1,
+                        }
+                }
                 animate={{
-                    opacity: isHovered && !isFlipped ? 1 : 0,
+                    x: photo.position.x,
+                    y: photo.position.y,
+                    rotate: photo.rotation,
+                    scale: 1,
+                    rotateY: isFlipped ? 180 : 0,
                 }}
                 transition={{
-                    duration: 0.1,
-                    ease: "easeInOut",
+                    type: "spring",
+                    mass: 0.8,
+                    y: {
+                        type: "spring",
+                    },
+                    rotateY: {
+                        duration: 0.6,
+                        ease: "easeInOut",
+                    },
+                }}
+                exit={{
+                    opacity: 0,
+                    scale: 0.5,
+                    y: -200,
+                    transition: { duration: 0.4 },
+                }}
+                onAnimationComplete={() => {
+                    if (!photo.hasAnimated) {
+                        onAnimationComplete();
+                    }
+                }}
+                style={{
+                    transformStyle: "preserve-3d",
+                    x,
+                    y,
                 }}
                 whileHover={{
-                    backgroundColor: "rgba(255, 255, 255, 0.8)",
+                    scale: 1.02,
+                    zIndex: 200,
+                    transition: { duration: 0.15 }
                 }}
-                disabled={photo.isUploading}
+                whileTap={{
+                    scale: 0.98,
+                    cursor: "grabbing"
+                }}
             >
-                {photo.response && photo.response.data.id === photo.id ? (
-                    <div className="flex items-center justify-center w-full h-full">
-                        {photo.response.success ? (
-                            <div className="flex items-center justify-center w-full h-full gap-2">
-                                <CheckCircle className="w-5 h-5 text-green-600 animate-bounce" />
-                                <span className="text-xs text-green-600 font-semibold">Shared with the world! 🌍</span>
-                            </div>
-                        ) : (
-                            <div className="flex items-center justify-center w-full h-full gap-2">
-                                <XCircle className="w-5 h-5 text-red-600 animate-pulse" />
-                                <span className="text-xs text-red-600 font-semibold">Oops! Try again later 😔</span>
-                            </div>
-                        )}
-                    </div>
-                ) : (
-                    photo.isUploading ? (
+                {/* Share Button */}
+                <motion.button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        uploadPhotoCard(photo);
+                    }}
+                    className="absolute -top-8 -translate-x-1/2 -translate-y-1/2 left-1/2 flex items-center justify-center gap-2 px-4 py-2 text-amber-900 bg-amber-100/90 backdrop-blur-md font-serif shadow-2xl cursor-pointer transition-all duration-300 rounded-full z-50 min-w-30 sm:min-w-35 h-10 sm:h-12 border border-amber-300/50 hover:bg-amber-200/95 hover:shadow-3xl hover:scale-105 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2"
+                    animate={{
+                        opacity: isHovered && !isFlipped ? 1 : 0,
+                        y: isHovered && !isFlipped ? 0 : 10,
+                    }}
+                    transition={{
+                        duration: 0.2,
+                        ease: "easeOut",
+                    }}
+                    whileHover={{
+                        scale: 1.05,
+                        backgroundColor: "rgba(245, 158, 11, 0.95)",
+                    }}
+                    whileTap={{
+                        scale: 0.95,
+                    }}
+                    disabled={photo.isUploading}
+                    title={photo.isUploading ? "Uploading..." : "Share this photo"}
+                    aria-label={photo.isUploading ? "Uploading photo" : "Share photo with the world"}
+                >
+                    {photo.response && photo.response.data?.id === photo.id ? (
+                        <div className="flex items-center justify-center w-full h-full gap-2">
+                            {photo.response.success ? (
+                                <>
+                                    <CheckCircle className="w-5 h-5 text-green-700 animate-pulse" />
+                                    <span className="text-xs font-medium text-green-800">Shared! 🌍</span>
+                                </>
+                            ) : (
+                                <>
+                                    <XCircle className="w-5 h-5 text-red-700 animate-pulse" />
+                                    <span className="text-xs font-medium text-red-800">Failed 😔</span>
+                                </>
+                            )}
+                        </div>
+                    ) : photo.isUploading ? (
                         <div className="flex items-center justify-center w-full h-full">
-                            <Loader2 className="text-gray-800 animate-spin" />
+                            <Loader2 className="w-5 h-5 text-amber-800 animate-spin" />
+                            <span className="text-xs font-medium text-amber-900 ml-1">Sharing...</span>
                         </div>
                     ) : (
                         <>
-                            <span className="text-sm">Share it with the world</span>
-                            <Upload className="w-5 h-5 text-gray-800 rotate-90" />
+                            <Upload className="w-4 h-4 text-amber-800" />
+                            <span className="text-xs font-medium">Share</span>
                         </>
-                    )
-                )}
-            </motion.button>
-
-            {/* Front Side */}
-            <div
-                className="absolute inset-0 bg-white shadow-2xl rounded-sm p-4"
-                style={{ backfaceVisibility: "hidden" }}
-            >
-                <div className="relative bg-black w-full h-56 overflow-hidden">
-                    {photo.isProcessing && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-10">
-                            <motion.div
-                                animate={{
-                                    scale: [1, 1.2, 1],
-                                    opacity: [0.5, 1, 0.5],
-                                }}
-                                transition={{
-                                    duration: 1.5,
-                                    repeat: Infinity,
-                                    ease: "easeInOut",
-                                }}
-                            >
-                                <Loader2 className="w-12 h-12 text-white animate-spin" />
-                            </motion.div>
-                        </div>
                     )}
-                    <motion.img
-                        src={displayURL}
-                        alt="Instant photo"
-                        className="object-cover w-full h-full select-none"
-                        animate={{
-                            filter: photo.isProcessing
-                                ? "blur(8px) brightness(0.7)"
-                                : "blur(0px) brightness(1)",
-                        }}
-                        transition={{ duration: 0.3 }}
-                        draggable={false}
+                </motion.button>
+
+                {/* Front Side */}
+                <div
+                    className="absolute inset-0 bg-white shadow-2xl rounded-sm p-1 sm:p-2 xl:p-3"
+                    style={{ backfaceVisibility: "hidden" }}
+                >
+                    <div className="relative bg-black w-full aspect-square overflow-hidden">
+                        {photo.isProcessing && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-10">
+                                <motion.div
+                                    animate={{
+                                        scale: [1, 1.2, 1],
+                                        opacity: [0.5, 1, 0.5],
+                                    }}
+                                    transition={{
+                                        duration: 1.5,
+                                        repeat: Infinity,
+                                        ease: "easeInOut",
+                                    }}
+                                >
+                                    <Loader2 className="w-8 h-8 sm:w-12 sm:h-12 text-white animate-spin" />
+                                </motion.div>
+                            </div>
+                        )}
+                        <motion.img
+                            src={displayURL}
+                            alt="Instant photo"
+                            className="object-cover w-full h-full select-none"
+                            animate={{
+                                filter: photo.isProcessing
+                                    ? "blur(8px) brightness(0.7)"
+                                    : "blur(0px) brightness(1)",
+                            }}
+                            transition={{ duration: 0.3 }}
+                            draggable={false}
+                        />
+                    </div>
+
+                    <div className="mt-2 sm:mt-4 text-black text-center text-xs sm:text-sm font-mono">
+                        HEY YOU 👋
+                        <br />
+                        <span className="text-xs opacity-60">
+                            {new Date().toLocaleDateString()}
+                        </span>
+                    </div>
+                </div>
+
+                {/* Back Side */}
+                <div
+                    className="absolute inset-0 bg-white shadow-2xl rounded-sm p-2 sm:p-4"
+                    style={{
+                        backfaceVisibility: "hidden",
+                        transform: "rotateY(180deg)",
+                    }}
+                >
+                    <textarea
+                        placeholder="Write a special message..."
+                        value={photo.message}
+                        onChange={(e) => onMessageChange(e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-full h-full resize-none outline-none border-2 border-dashed border-gray-300 p-2 sm:p-3 text-xs sm:text-sm font-mono text-black focus:border-gray-500 transition-colors rounded"
                     />
                 </div>
 
-                <div className="mt-4 text-black text-center text-sm font-mono">
-                    HEY YOU 👋
-                    <br />
-                    <span className="text-xs opacity-60">
-                        {new Date().toLocaleDateString()}
-                    </span>
-                </div>
-            </div>
+                {/* Flip Button */}
+                <motion.button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onFlip();
+                    }}
+                    className="cursor-pointer absolute -right-3 top-1/2 -translate-y-1/2 bg-white/50 backdrop-blur-sm p-2 sm:p-3 rounded-full shadow-xl hover:bg-white/80 transition-all z-201 min-w-10 min-h-10 sm:min-w-12 sm:min-h-12"
+                    style={{ pointerEvents: "auto" }}
+                    whileHover={{
+                        opacity: 1,
+                        x: 0,
+                        scale: 1.1,
+                    }}
+                    animate={{
+                        opacity: isHovered ? 1 : 0, // Control opacity with state
+                    }}
+                >
+                    {isFlipped ? <RotateCw className="w-4 h-4 sm:w-5 sm:h-5 text-gray-800 rotate-90" /> : <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5 text-gray-800 rotate-90" />}
+                </motion.button>
 
-            {/* Back Side */}
-            <div
-                className="absolute inset-0 bg-white shadow-2xl rounded-sm p-4"
-                style={{
-                    backfaceVisibility: "hidden",
-                    transform: "rotateY(180deg)",
-                }}
-            >
-                <textarea
-                    placeholder="Write a special message..."
-                    value={photo.message}
-                    onChange={(e) => onMessageChange(e.target.value)}
-                    onClick={(e) => e.stopPropagation()}
-                    className="w-full h-full resize-none outline-none border-2 border-dashed border-gray-300 p-3 text-sm font-mono text-black focus:border-gray-500 transition-colors rounded"
-                />
-            </div>
+                {/* Download Button */}
+                <motion.button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        downloadPhoto(photo);
+                    }}
+                    className="absolute -right-3 top-10/12 -translate-y-1/2 flex items-center justify-center p-2 sm:p-3 bg-amber-100/90 backdrop-blur-md shadow-2xl cursor-pointer transition-all duration-300 rounded-full z-50 border border-amber-300/50 hover:bg-amber-200/95 hover:shadow-3xl hover:scale-105 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2"
+                    animate={{
+                        opacity: isHovered && !isFlipped ? 1 : 0,
+                        y: isHovered && !isFlipped ? 0 : 10,
+                    }}
+                    transition={{
+                        duration: 0.2,
+                        ease: "easeOut",
+                    }}
+                    whileHover={{
+                        scale: 1.05,
+                        backgroundColor: "rgba(245, 158, 11, 0.95)",
+                    }}
+                    whileTap={{
+                        scale: 0.95,
+                    }}
+                    disabled={photo.isUploading || photo.isProcessing || isDownloading}
+                    title="Download this photo"
+                    aria-label="Download photo as image"
+                >
+                    {isDownloading ? (
+                        <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 text-gray-800 animate-spin" />
+                    ) : (
+                        <Download className="w-4 h-4 sm:w-5 sm:h-5 text-gray-800" />
+                    )}
+                </motion.button>
+            </motion.div>
+        )
+    });
 
-            {/* Flip Button */}
-            <motion.button
-                onClick={(e) => {
-                    e.stopPropagation();
-                    onFlip();
-                }}
-                className="cursor-pointer absolute -right-3 top-1/2 -translate-y-1/2 bg-white/50 backdrop-blur-sm p-3 rounded-full shadow-xl hover:bg-white/80 transition-all z-201"
-                style={{ pointerEvents: "auto" }}
-                whileHover={{
-                    opacity: 1,
-                    x: 0,
-                    scale: 1.1,
-                }}
-                animate={{
-                    opacity: isHovered ? 1 : 0, // Control opacity with state
-                }}
-            >
-                {isFlipped ? <RotateCw className="w-5 h-5 text-gray-800 rotate-90" /> : <RotateCcw className="w-5 h-5 text-gray-800 rotate-90" />}
-            </motion.button>
-        </motion.div>
-    )
-}
+PhotoCard.displayName = "PhotoCard";
+
+export default PhotoCard;

@@ -1,6 +1,8 @@
+import { getUserIP } from "@/utils/ip";
 import * as admin from "firebase-admin";
 import { getFirestore } from "firebase-admin/firestore";
 import { NextRequest, NextResponse } from "next/server";
+import { RateLimiterMemory } from "rate-limiter-flexible";
 
 const serviceAccount = {
   projectId: process.env.GOOGLE_APPLICATION_CREDENTIALS_PROJECT_ID as string,
@@ -30,7 +32,35 @@ if (!admin.apps.length) {
 const storage = admin.storage().bucket();
 const db = getFirestore();
 
+const opts = {
+  points: 20, // 20 points
+  duration: 60 * 60 * 60 * 24, // 1 day
+};
+
+const rateLimiter = new RateLimiterMemory(opts);
+
 export async function POST(req: NextRequest) {
+  const ip = await getUserIP();
+  try {
+    const rateLimitRes = await rateLimiter.consume(ip, 2);
+    console.log(rateLimitRes);
+    if (rateLimitRes.remainingPoints === 0) {
+      console.log("Rate limit exceeded for IP:", ip);
+      return NextResponse.json({
+        error: "Rate limit exceeded",
+        success: false,
+        status: 429,
+      });
+    }
+  } catch (error) {
+    console.error("Error Rate limit", error);
+    return NextResponse.json({
+      error: "Rate limit exceeded",
+      success: false,
+      status: 429,
+    });
+  }
+
   try {
     const formData = await req.formData();
     const file = formData.get("file") as File;
