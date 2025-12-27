@@ -160,7 +160,7 @@ const PhotoCard = forwardRef<HTMLDivElement, PhotoCardProps>(
                     onClick={(e) => {
                         e.stopPropagation();
                         // If photo is already shared, do nothing
-                        if (photo.response.success) {
+                        if (photo.response) {
                             return;
                         }
                         uploadPhotoCard(photo);
