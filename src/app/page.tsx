@@ -151,6 +151,7 @@ export default function InstantCameraCard() {
     if (!videoRef.current || !canvasRef.current || isCapturing) return;
 
     if (!videoRef.current.srcObject) {
+      setError("Camera not available. Please Grant Camera Access");
       startCamera();
       return;
     }
@@ -219,7 +220,7 @@ export default function InstantCameraCard() {
     if (photos.length < 1) {
       setDemoData((prev) => prev.map((p) => (p.id === photo.id ? { ...p, isUploading: true } : p)));
       const blob = await fetch(photo.originalURL).then((res) => res.blob());
-      console.log(blob);
+      // console.log(blob);
       formData.append("file", blob, `${photo.id}.jpg`);
     } else {
       setPhotos((prev) => prev.map((p) => (p.id === photo.id ? { ...p, isUploading: true } : p)));
@@ -243,7 +244,7 @@ export default function InstantCameraCard() {
       });
 
       const data = await res.json();
-      console.log("Upload successful:", data);
+      // console.log("Upload successful:", data);
 
       if (photos.length < 1) {
         setDemoData((prev) =>
@@ -259,7 +260,7 @@ export default function InstantCameraCard() {
         setError("Your Today's upload limit has been reached. Please try again tomorrow.");
       }
     } catch (error) {
-      console.log(error);
+      console.error("Upload error:", error);
       if (photos.length < 1) {
         setDemoData((prev) => prev.map((p) => (p.id === photo.id ? { ...p, isUploading: false } : p)));
       } else {
@@ -530,7 +531,7 @@ export default function InstantCameraCard() {
           )}
         </div>
 
-        <div className="mt-4 w-full px-2 ml-10">
+        <div className="mt-4 w-full px-2 ml-10 sm:ml-16">
           <FilterSlider activeIndex={activeIndex} setActiveIndex={setActiveIndex} capture={capture} />
         </div>
       </div>

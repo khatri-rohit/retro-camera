@@ -48,7 +48,6 @@ export async function editCapturedPhoto(photoBlob: Blob, prompt: string) {
     [Uint8Array.from(atob(inlineData.data), (c) => c.charCodeAt(0))],
     { type: inlineData.mimeType }
   );
-  console.log(editedBlob);
 
   return { url: URL.createObjectURL(editedBlob), processedBlob: editedBlob };
 }

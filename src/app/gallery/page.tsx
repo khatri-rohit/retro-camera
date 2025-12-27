@@ -59,7 +59,6 @@ const Gallery = () => {
                 }
 
                 const data = await res.json();
-                console.log("Fetch successful:", data);
                 setPhotos(data.data);
                 setLoading(false);
                 setError(null);
