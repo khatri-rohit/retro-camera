@@ -46,7 +46,6 @@ export async function GET(req: NextRequest) {
     try {
       env = getCloudflareContext().env;
     } catch (err) {
-      // Fallback: read from process.env or handle gracefully in local dev
       env = process.env as any; // or set defaults
       console.warn("Cloudflare context not initialized; using fallback env.");
     }

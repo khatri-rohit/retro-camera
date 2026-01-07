@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-// app/api/upload/route.ts - FIXED VERSION USING R2 STORAGE
 import { getUserIP } from "@/utils/ip";
 import { NextRequest, NextResponse } from "next/server";
 import { RateLimiterMemory } from "rate-limiter-flexible";
@@ -156,7 +155,7 @@ export async function POST(req: NextRequest) {
     const fileExtension = file.type.split("/")[1] || "jpg";
     const filename = `${photo.id}.${fileExtension}`;
 
-    // ✅ Upload to R2 Bucket - FIXED APPROACH
+    // Upload to R2 Bucket
     await env.retro_camera_photos.put(filename, buffer, {
       httpMetadata: {
         contentType: file.type,
@@ -170,7 +169,6 @@ export async function POST(req: NextRequest) {
 
     console.log(`File uploaded to R2: ${filename}`);
 
-    // ✅ Construct public URL using R2_PUBLIC_URL
     const r2PublicUrl = env.R2_PUBLIC_URL || process.env.R2_PUBLIC_URL;
     console.log(r2PublicUrl);
     if (!r2PublicUrl) {
@@ -187,7 +185,7 @@ export async function POST(req: NextRequest) {
 
     const publicUrl = `${r2PublicUrl}/${filename}`;
 
-    // ✅ Save to Cloudflare D1
+    // Save to Cloudflare D1
     const createdAt = Date.now();
     await env.DB.prepare(
       `INSERT INTO photos (id, imageUrl, message, positionX, positionY, rotation, createdAt) 

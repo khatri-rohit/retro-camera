@@ -62,7 +62,7 @@ export default function InstantCameraCard() {
       {
         id: `demo-${Date.now() + 1000}`,
         blob: null,
-        originalURL: "/self1jfif.jfif ",
+        originalURL: "/self1jfif.jpg ",
         editedURL: null,
         isProcessing: false,
         isUploading: false,
@@ -73,7 +73,7 @@ export default function InstantCameraCard() {
       {
         id: `demo-${Date.now()}`,
         blob: null,
-        originalURL: "/self2jfif.jfif ",
+        originalURL: "/self2jfif.jpg ",
         editedURL: null,
         isProcessing: false,
         isUploading: false,

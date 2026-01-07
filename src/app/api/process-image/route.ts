@@ -4,7 +4,6 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// Retry configuration for production reliability
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1000;
 
@@ -43,7 +42,6 @@ async function retryWithBackoff<T>(
   }
 }
 
-// Production-grade prompts for subtle color grading
 const FILTER_PROMPTS: Record<string, string> = {
   "soft-retro": `Apply a subtle soft-retro photographic film look to this image. 
     Add: warm tone (amber/sepia tint), slight desaturation (85% of original), gentle contrast boost (+5%), 
@@ -120,8 +118,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Get API key from environment
-    const apiKey =
-      process.env.FIREBASE_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+    const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
 
     if (!apiKey) {
       console.error("Gemini API key not configured");
@@ -134,7 +131,6 @@ export async function POST(req: NextRequest) {
     // Get the appropriate prompt for the filter
     const prompt = FILTER_PROMPTS[filterType] || FILTER_PROMPTS["soft-retro"];
 
-    // Initialize Gemini AI
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
       model: "gemini-2.5-flash-image",
