@@ -1,19 +1,20 @@
 # Retro Camera 📸
 
-A modern, secure, and production-grade retro-style instant camera web application built with Next.js, Firebase, and advanced security measures. Capture nostalgic polaroid-style photos with real-time filters, upload them securely, and view your gallery with smooth animations.
+A modern, secure, and production-grade retro-style instant camera web application built with Next.js, Cloudflare Workers, and advanced security measures. Capture nostalgic polaroid-style photos with real-time filters, upload them securely, and view your gallery with smooth animations.
 
 ## 🎯 Project Overview
 
-**Retro Camera** is a full-stack web application that recreates the nostalgic experience of instant photography in a digital format. Users can capture photos using their device's camera, apply retro-style filters, add personalized messages, and share their creations in a beautiful gallery interface.
+**Retro Camera** is a full-stack web application that recreates the nostalgic experience of instant photography in a digital format. Users can capture photos using their device's camera, apply retro-style filters, add personalized messages, and share their creations in a beautiful gallery interface. Now powered by Cloudflare's edge network for blazing-fast performance worldwide.
 
 ### Key Features
 
 - **Real-time Camera Access**: Live camera feed with front/back camera switching
-- **Advanced Filters**: Multiple retro-inspired photo filters with live preview
+- **Advanced Filters**: Multiple retro-inspired photo filters with live preview powered by Gemini AI
 - **Interactive Photo Editing**: Drag, rotate, and position photos with custom messages
-- **Secure Upload System**: Firebase Storage integration with file validation
+- **Secure Upload System**: Cloudflare R2 storage with file validation
 - **Responsive Gallery**: Animated photo gallery with flip animations
 - **Production Security**: Rate limiting, input sanitization, and atomic operations
+- **Edge Performance**: Deployed on Cloudflare Workers for global low-latency access
 - **Offline Capability**: Session storage caching for improved performance
 
 ## 🏗️ Architecture & Implementation
@@ -21,12 +22,14 @@ A modern, secure, and production-grade retro-style instant camera web applicatio
 ### Tech Stack
 
 - **Frontend**: Next.js 15, React 19, TypeScript, Tailwind CSS
-- **Backend**: Next.js API Routes, Firebase Admin SDK
-- **Database**: Firestore (NoSQL document database)
-- **Storage**: Firebase Cloud Storage
+- **Backend**: Next.js API Routes on Cloudflare Workers
+- **Database**: Cloudflare D1 (SQLite at the edge)
+- **Storage**: Cloudflare Images (optimized image delivery and storage)
+- **AI**: Google Gemini API for image filters
 - **Styling**: Tailwind CSS with custom animations
 - **Icons**: Lucide React
 - **Security**: Rate limiting, input validation, XSS protection
+- **Deployment**: Cloudflare Workers/Pages with OpenNext adapter
 
 ### Application Structure
 
@@ -40,17 +43,21 @@ retro-camera/
 ├── src/
 │   └── app/
 │       ├── api/         # API routes
-│       │   ├── gallery/ # Photo gallery retrieval
-│       │   └── upload/  # Secure photo upload
-│       ├── firebaseGetImage.ts # Firebase utilities
+│       │   ├── gallery/ # Photo gallery retrieval (D1)
+│       │   ├── process-image/ # AI image processing (Workers AI)
+│       │   └── upload/  # Secure photo upload (Cloudflare Images)
+│       ├── geminiImageEdit.ts # Gemini AI image editing
 │       ├── gallery/     # Gallery page
 │       ├── globals.css  # Global styles
 │       ├── layout.tsx   # Root layout
 │       └── page.tsx     # Main camera interface
 ├── utils/
+├── wrangler.json        # Cloudflare Workers configuration
+├── open-next.config.ts  # OpenNext adapter configuration
+├── schema.sql           # D1 database schema
+└── cloudflare-env.d.ts  # TypeScript types for Cloudflare bindings
 │   ├── ip.ts           # IP address utilities for rate limiting
-│   └── uploadImage.ts  # Image upload utilities
-└── firebase.ts         # Firebase client configuration
+│   └── uploadImage.ts  # Image upload utilities (legacy)
 ```
 
 ## 🔒 Security Implementation
@@ -66,21 +73,22 @@ retro-camera/
 
 - **JSON Parsing**: Safe parsing with try-catch blocks
 - **Schema Validation**: Comprehensive type checking for all inputs
-- **XSS Protection**: DOMPurify sanitization for user messages
+- **XSS Protection**: HTML tag removal and special character sanitization
 - **File Validation**: Size limits (10MB), type checking
 - **Data Sanitization**: Length limits, HTML tag removal
 
 ### Atomic Operations
 
-- **Firebase Batch Writes**: Ensures database consistency
+- **D1 Transactions**: Ensures database consistency
 - **Storage Cleanup**: Automatic deletion of orphaned files on failure
 - **Transaction Safety**: All-or-nothing operations prevent partial states
 
 ### Authentication & Authorization
 
-- **Environment Variables**: Secure Firebase credentials
+- **Environment Variables**: Secure API credentials
 - **IP-based Limiting**: Basic abuse prevention
 - **Input Filtering**: Defense-in-depth validation
+- **Edge Security**: Cloudflare's DDoS protection and WAF
 
 ## 📡 API Endpoints
 
@@ -147,23 +155,23 @@ retro-camera/
 
 - Node.js 18+
 - npm or yarn
-- Firebase project with Firestore and Storage enabled
+- Cloudflare account (free tier works)
+- Cloudflare Images enabled
 
 ### Environment Variables
 
-Create `.env.local` with:
+The application uses Cloudflare Workers environment variables. Set them using wrangler secrets:
 
-```env
-GOOGLE_APPLICATION_CREDENTIALS_PROJECT_ID=your_project_id
-GOOGLE_APPLICATION_CREDENTIALS_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n..."
-GOOGLE_APPLICATION_CREDENTIALS_CLIENT_EMAIL=your_service_account_email
-GOOGLE_APPLICATION_CREDENTIALS_PRIVATE_KEY_ID=your_key_id
-GOOGLE_APPLICATION_CREDENTIALS_CLIENT_ID=your_client_id
-GOOGLE_APPLICATION_CREDENTIALS_AUTH_URI=https://accounts.google.com/o/oauth2/auth
-GOOGLE_APPLICATION_CREDENTIALS_TOKEN_URI=https://oauth2.googleapis.com/token
-GOOGLE_APPLICATION_CREDENTIALS_AUTH_PROVIDER_X509_CERT_URL=https://www.googleapis.com/oauth2/v1/certs
-GOOGLE_APPLICATION_CREDENTIALS_CLIENT_X509_CERT_URL=your_cert_url
-FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+```bash
+# Set Cloudflare Images API credentials
+npx wrangler secret put CLOUDFLARE_ACCOUNT_ID
+# Enter your Cloudflare Account ID (found in dashboard)
+
+npx wrangler secret put CLOUDFLARE_API_TOKEN
+# Enter your Cloudflare API token (create at https://dash.cloudflare.com/profile/api-tokens)
+
+npx wrangler secret put CLOUDFLARE_ACCOUNT_HASH
+# Enter your Cloudflare Images account hash (found in Images dashboard)
 ```
 
 ### Installation Steps
@@ -176,9 +184,24 @@ cd retro-camera
 # Install dependencies
 npm install
 
+# Create Cloudflare D1 database
+npx wrangler d1 create retro-camera-db
+
+# Update wrangler.json with the database ID from above
+
+# Initialize database schema
+npx wrangler d1 execute retro-camera-db --file=./schema.sql
+
+# Enable Cloudflare Images in your account (dashboard > Images)
+
 # Start development server
 npm run dev
+
+# Or test with Cloudflare adapter
+npm run preview
 ```
+
+For detailed migration instructions from Firebase, see [MIGRATION.md](MIGRATION.md).
 
 ## 📖 Usage Guide
 
@@ -229,17 +252,29 @@ npm run dev
 
 ## 🚀 Deployment
 
-### Vercel Deployment (Recommended)
+### Cloudflare Workers/Pages (Recommended)
 
 ```bash
-# Install Vercel CLI
-npm i -g vercel
+# Deploy directly
+npm run deploy
 
-# Deploy
-vercel
-
-# Set environment variables in Vercel dashboard
+# Or use Cloudflare Git integration
+# 1. Push code to GitHub/GitLab
+# 2. Connect repository in Cloudflare Dashboard
+# 3. Set build command: npm run deploy
+# 4. Enable automatic deployments
 ```
+
+**Set Environment Variables in Cloudflare:**
+
+```bash
+npx wrangler secret put NEXT_PUBLIC_GEMINI_API_KEY
+```
+
+Or set in Cloudflare Dashboard:
+
+- Go to Workers & Pages > Your Project > Settings > Environment Variables
+- Add `NEXT_PUBLIC_GEMINI_API_KEY` with your Gemini API key
 
 ### Firebase Hosting Alternative
 

@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { Camera, Images, SwitchCamera } from "lucide-react";
 import PhotoCard from "../../components/PhotoCard";
-import { editCapturedPhoto } from "./firebaseGetImage";
+import { editCapturedPhoto } from "./geminiImageEdit";
 import FilterSlider from "../../components/FilterSilder";
 import { availableFilters } from "../../components/Filters";
 import { domToPng } from "modern-screenshot";
@@ -62,7 +62,7 @@ export default function InstantCameraCard() {
       {
         id: `demo-${Date.now() + 1000}`,
         blob: null,
-        originalURL: "/self1jfif.jfif ",
+        originalURL: "/self1jfif.jpg ",
         editedURL: null,
         isProcessing: false,
         isUploading: false,
@@ -73,7 +73,7 @@ export default function InstantCameraCard() {
       {
         id: `demo-${Date.now()}`,
         blob: null,
-        originalURL: "/self2jfif.jfif ",
+        originalURL: "/self2jfif.jpg ",
         editedURL: null,
         isProcessing: false,
         isUploading: false,
@@ -197,7 +197,7 @@ export default function InstantCameraCard() {
       try {
         const { url, processedBlob } = await editCapturedPhoto(
           blob,
-          availableFilters[activeIndex].prompt
+          availableFilters[activeIndex].id
         );
 
         setPhotos((prev) =>

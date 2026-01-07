@@ -47,3 +47,8 @@ public/firebase-auth-sw.js
 public/firebase-storage-sw.js
 public/firebase-performance-sw.js
 public/retro-camera.json
+
+# Cloudflare
+.open-next/
+.wrangler/
+wrangler.toml
