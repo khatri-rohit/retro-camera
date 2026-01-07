@@ -197,7 +197,7 @@ export default function InstantCameraCard() {
       try {
         const { url, processedBlob } = await editCapturedPhoto(
           blob,
-          availableFilters[activeIndex].prompt
+          availableFilters[activeIndex].id
         );
 
         setPhotos((prev) =>

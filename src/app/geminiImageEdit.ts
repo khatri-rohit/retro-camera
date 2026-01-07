@@ -1,12 +1,12 @@
-// Image editing using Cloudflare Workers AI via API route
+// Image editing using Gemini 2.5 Flash via API route
 // This function runs on the client and calls the server-side API
 
-export async function editCapturedPhoto(photoBlob: Blob, prompt: string) {
+export async function editCapturedPhoto(photoBlob: Blob, filterId: string) {
   try {
     // Create form data for API request
     const formData = new FormData();
     formData.append("image", photoBlob, "photo.jpg");
-    formData.append("prompt", prompt);
+    formData.append("prompt", filterId); // Send filter ID (e.g., "soft-retro")
 
     // Call the server-side API route
     const response = await fetch("/api/process-image", {
@@ -26,7 +26,7 @@ export async function editCapturedPhoto(photoBlob: Blob, prompt: string) {
       processedBlob: processedBlob,
     };
   } catch (error) {
-    console.error("Failed to edit photo with Workers AI:", error);
+    console.error("Failed to edit photo with Gemini:", error);
     // Fallback: return original photo if AI fails
     return {
       url: URL.createObjectURL(photoBlob),
