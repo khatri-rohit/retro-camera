@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import ViewCard from "../../../components/ViewCard";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Camera, Loader } from "lucide-react";
+import { Camera, Loader, AlertTriangle, RefreshCw } from "lucide-react";
 
 interface Photo {
     id: string;
@@ -48,50 +48,56 @@ const Gallery = () => {
         });
     };
 
+    const fetchPhotos = async () => {
+        const cacheKey = 'gallery_photos';
+        const cacheExpiryKey = 'gallery_photos_expiry';
+        const now = Date.now();
+        const expiryTime = 5 * 60 * 1000; // 5 minutes
+
+        // Check session storage
+        const cachedData = sessionStorage.getItem(cacheKey);
+        const cachedExpiry = sessionStorage.getItem(cacheExpiryKey);
+
+        if (cachedData && cachedExpiry && now < parseInt(cachedExpiry)) {
+            // Use cached data
+            setPhotos(JSON.parse(cachedData));
+            setLoading(false);
+            return;
+        }
+
+        try {
+            setLoading(true);
+            const res = await fetch("/api/gallery");
+
+            if (!res.ok) {
+                throw new Error(`Fetch failed: ${res.statusText}`);
+            }
+
+            const data = await res.json();
+            setPhotos(data.data);
+            setLoading(false);
+            setError(null);
+
+            // Store in session storage
+            sessionStorage.setItem(cacheKey, JSON.stringify(data.data));
+            sessionStorage.setItem(cacheExpiryKey, (now + expiryTime).toString());
+        } catch (error) {
+            console.error("Fetch error:", error);
+            setError("Failed to load photos.");
+            setLoading(false);
+        }
+    };
+
+    const retry = () => {
+        setError(null);
+        fetchPhotos();
+    };
+
     useEffect(() => {
-        const fetchPhotos = async () => {
-            const cacheKey = 'gallery_photos';
-            const cacheExpiryKey = 'gallery_photos_expiry';
-            const now = Date.now();
-            const expiryTime = 5 * 60 * 1000; // 5 minutes
-
-            // Check session storage
-            const cachedData = sessionStorage.getItem(cacheKey);
-            const cachedExpiry = sessionStorage.getItem(cacheExpiryKey);
-
-            if (cachedData && cachedExpiry && now < parseInt(cachedExpiry)) {
-                // Use cached data
-                setPhotos(JSON.parse(cachedData));
-                setLoading(false);
-                return;
-            }
-
-            try {
-                setLoading(true);
-                const res = await fetch("/api/gallery");
-
-                if (!res.ok) {
-                    throw new Error(`Fetch failed: ${res.statusText}`);
-                }
-
-                const data = await res.json();
-                setPhotos(data.data);
-                setLoading(false);
-                setError(null);
-
-                // Store in session storage
-                sessionStorage.setItem(cacheKey, JSON.stringify(data.data));
-                sessionStorage.setItem(cacheExpiryKey, (now + expiryTime).toString());
-            } catch (error) {
-                console.error("Fetch error:", error);
-                setError("Failed to load photos.");
-            }
-        };
-
         fetchPhotos();
     }, []);
 
-    if (loading) {
+    if (loading && !error) {
         return (
             <div className="flex items-center justify-center w-full h-screen bg-linear-to-br from-amber-100 via-orange-50 to-yellow-50">
                 <div className="flex flex-col gap-2 items-center justify-center text-xl text-amber-900">
@@ -104,8 +110,41 @@ const Gallery = () => {
 
     if (error) {
         return (
-            <div className="flex items-center justify-center w-full h-screen bg-linear-to-br from-red-50 via-orange-50 to-yellow-50">
-                <div className="text-xl text-red-700">{error}</div>
+            <div className="flex items-center justify-center w-full min-h-screen bg-linear-to-br from-red-50 via-orange-50 to-yellow-50 p-4">
+                <motion.div
+                    className="flex flex-col items-center justify-center text-center max-w-md space-y-6"
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.5, ease: "easeOut" }}
+                >
+                    <div className="relative">
+                        <AlertTriangle className="w-16 h-16 text-red-600 animate-pulse" />
+                        <div className="absolute inset-0 bg-red-200 rounded-full opacity-20 animate-ping"></div>
+                    </div>
+                    <div className="space-y-2">
+                        <h2 className="text-2xl font-bold text-red-800">Oops! Something went wrong</h2>
+                        <p className="text-red-700 text-lg leading-relaxed">
+                            We could not load your photos right now. This might be a temporary issue.
+                        </p>
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-4 items-center">
+                        <button
+                            onClick={retry}
+                            className="flex items-center gap-2 px-6 py-3 bg-amber-100 text-amber-900 border-2 border-amber-300 rounded-lg font-medium shadow-lg hover:bg-amber-200 hover:shadow-xl hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                        >
+                            <RefreshCw className="w-5 h-5" />
+                            Try Again
+                        </button>
+                        <a
+                            href="https://thisisrohit.dev/contact"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-amber-900 hover:text-amber-700 underline decoration-amber-400 decoration-2 underline-offset-2 hover:decoration-amber-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 rounded-sm"
+                        >
+                            Contact Support
+                        </a>
+                    </div>
+                </motion.div>
             </div>
         );
     }
