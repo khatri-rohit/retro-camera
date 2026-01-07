@@ -24,7 +24,7 @@ A modern, secure, and production-grade retro-style instant camera web applicatio
 - **Frontend**: Next.js 15, React 19, TypeScript, Tailwind CSS
 - **Backend**: Next.js API Routes on Cloudflare Workers
 - **Database**: Cloudflare D1 (SQLite at the edge)
-- **Storage**: Cloudflare R2 (S3-compatible object storage)
+- **Storage**: Cloudflare Images (optimized image delivery and storage)
 - **AI**: Google Gemini API for image filters
 - **Styling**: Tailwind CSS with custom animations
 - **Icons**: Lucide React
@@ -44,7 +44,8 @@ retro-camera/
 │   └── app/
 │       ├── api/         # API routes
 │       │   ├── gallery/ # Photo gallery retrieval (D1)
-│       │   └── upload/  # Secure photo upload (R2)
+│       │   ├── process-image/ # AI image processing (Workers AI)
+│       │   └── upload/  # Secure photo upload (Cloudflare Images)
 │       ├── geminiImageEdit.ts # Gemini AI image editing
 │       ├── gallery/     # Gallery page
 │       ├── globals.css  # Global styles
@@ -155,17 +156,23 @@ retro-camera/
 - Node.js 18+
 - npm or yarn
 - Cloudflare account (free tier works)
-- Google Gemini API key
+- Cloudflare Images enabled
 
 ### Environment Variables
 
-Create `.env.local` with:
+The application uses Cloudflare Workers environment variables. Set them using wrangler secrets:
 
-```env
-NEXT_PUBLIC_GEMINI_API_KEY=your_gemini_api_key
+```bash
+# Set Cloudflare Images API credentials
+npx wrangler secret put CLOUDFLARE_ACCOUNT_ID
+# Enter your Cloudflare Account ID (found in dashboard)
+
+npx wrangler secret put CLOUDFLARE_API_TOKEN
+# Enter your Cloudflare API token (create at https://dash.cloudflare.com/profile/api-tokens)
+
+npx wrangler secret put CLOUDFLARE_ACCOUNT_HASH
+# Enter your Cloudflare Images account hash (found in Images dashboard)
 ```
-
-Get your Gemini API key from: https://aistudio.google.com/app/apikey
 
 ### Installation Steps
 
@@ -185,8 +192,7 @@ npx wrangler d1 create retro-camera-db
 # Initialize database schema
 npx wrangler d1 execute retro-camera-db --file=./schema.sql
 
-# Create R2 bucket for photo storage
-npx wrangler r2 bucket create retro-camera-photos
+# Enable Cloudflare Images in your account (dashboard > Images)
 
 # Start development server
 npm run dev
@@ -260,11 +266,13 @@ npm run deploy
 ```
 
 **Set Environment Variables in Cloudflare:**
+
 ```bash
 npx wrangler secret put NEXT_PUBLIC_GEMINI_API_KEY
 ```
 
 Or set in Cloudflare Dashboard:
+
 - Go to Workers & Pages > Your Project > Settings > Environment Variables
 - Add `NEXT_PUBLIC_GEMINI_API_KEY` with your Gemini API key
 

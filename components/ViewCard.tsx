@@ -75,7 +75,7 @@ export default function ViewCard({
                         HEY YOU 👋
                         <br />
                         <span className="text-xs opacity-60">
-                            {new Date(photo.createdAt._seconds * 1000 + photo.createdAt._nanoseconds / 1000000).toLocaleDateString()}
+                            {new Date(photo.createdAt).toLocaleDateString()}
                         </span>
                     </div>
                 </div>

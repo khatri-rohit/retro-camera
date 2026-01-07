@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextRequest, NextResponse } from "next/server";
 import { getUserIP } from "@/utils/ip";
 import { RateLimiterMemory } from "rate-limiter-flexible";
-import type { CloudflareEnv } from "../../../../cloudflare-env";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 const opts = {
   points: 100, // 100 points
@@ -40,9 +41,16 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // Get Cloudflare bindings
-    const env = process.env as unknown as CloudflareEnv;
-    
+    // Get Cloudflare bindings with defensive fallback
+    let env;
+    try {
+      env = getCloudflareContext().env;
+    } catch (err) {
+      // Fallback: read from process.env or handle gracefully in local dev
+      env = process.env as any; // or set defaults
+      console.warn("Cloudflare context not initialized; using fallback env.");
+    }
+
     // Query Cloudflare D1
     const result = await env.DB.prepare(
       `SELECT id, imageUrl, message, positionX, positionY, rotation, createdAt 
@@ -54,18 +62,12 @@ export async function GET(req: NextRequest) {
     const validatedData = result.results
       .map((row: any) => {
         // Validate required fields
-        if (
-          !row.id ||
-          !row.imageUrl ||
-          typeof row.rotation !== "number"
-        ) {
+        if (!row.id || !row.imageUrl || typeof row.rotation !== "number") {
           console.warn(`Invalid photo data for id ${row.id}, skipping`);
           return null;
         }
         const sanitizedMessage =
-          typeof row.message === "string"
-            ? row.message.substring(0, 500)
-            : "";
+          typeof row.message === "string" ? row.message.substring(0, 500) : "";
 
         return {
           id: row.id,

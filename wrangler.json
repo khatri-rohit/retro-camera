@@ -8,17 +8,23 @@
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
+  "r2_buckets": [
+    {
+      "bucket_name": "retro-camera-photos",
+      "binding": "retro_camera_photos",
+      "remote": true
+    }
+  ],
+  "ai": {
+    "binding": "AI",
+    "remote": true
+  },
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "retro-camera-db",
-      "database_id": "to-be-created"
-    }
-  ],
-  "r2_buckets": [
-    {
-      "binding": "PHOTO_BUCKET",
-      "bucket_name": "retro-camera-photos"
+      "database_id": "0db7f250-7958-4455-9641-2369e0bcf653",
+      "remote": true
     }
   ]
 }

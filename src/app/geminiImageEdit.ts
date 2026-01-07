@@ -1,72 +1,36 @@
-// Image editing using Google Gemini API directly
-async function blobToGenerativePart(blob: Blob) {
-  const base64 = await new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      if (!reader.result) reject("Failed to read image");
-      resolve((reader.result as string).split(",")[1]);
-    };
-    reader.readAsDataURL(blob);
-  });
-
-  return {
-    inlineData: {
-      data: base64,
-      mimeType: blob.type,
-    },
-  };
-}
+// Image editing using Cloudflare Workers AI via API route
+// This function runs on the client and calls the server-side API
 
 export async function editCapturedPhoto(photoBlob: Blob, prompt: string) {
-  const imagePart = await blobToGenerativePart(photoBlob);
+  try {
+    // Create form data for API request
+    const formData = new FormData();
+    formData.append("image", photoBlob, "photo.jpg");
+    formData.append("prompt", prompt);
 
-  // Use Google Gemini API directly
-  const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error("NEXT_PUBLIC_GEMINI_API_KEY is not set");
-  }
-
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`,
-    {
+    // Call the server-side API route
+    const response = await fetch("/api/process-image", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [imagePart, { text: prompt }],
-          },
-        ],
-        generationConfig: {
-          responseModalities: ["IMAGE"],
-        },
-      }),
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error(`API error: ${response.statusText}`);
     }
-  );
 
-  if (!response.ok) {
-    throw new Error(`Gemini API error: ${response.statusText}`);
+    // Get the processed image as blob
+    const processedBlob = await response.blob();
+
+    return {
+      url: URL.createObjectURL(processedBlob),
+      processedBlob: processedBlob,
+    };
+  } catch (error) {
+    console.error("Failed to edit photo with Workers AI:", error);
+    // Fallback: return original photo if AI fails
+    return {
+      url: URL.createObjectURL(photoBlob),
+      processedBlob: photoBlob,
+    };
   }
-
-  const result = await response.json();
-
-  const inlineData = result?.candidates?.[0]?.content?.parts?.find(
-    (part: any) => part.inlineData
-  )?.inlineData;
-
-  if (!inlineData) {
-    throw new Error("No image returned from Gemini");
-  }
-
-  const editedBlob = new Blob(
-    [Uint8Array.from(atob(inlineData.data), (c) => c.charCodeAt(0))],
-    { type: inlineData.mimeType }
-  );
-
-  return {
-    url: URL.createObjectURL(editedBlob),
-    processedBlob: editedBlob,
-  };
 }

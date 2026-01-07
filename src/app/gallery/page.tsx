@@ -178,14 +178,14 @@ const Gallery = () => {
                 )}
             </div>
 
-            <footer className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-amber-800 text-xs font-medium flex flex-col items-center text-center gap-1 bg-white/30 backdrop-blur-md rounded-xl px-6 py-3 shadow-lg border border-amber-200/60 transition-all duration-300 hover:bg-white/40 hover:shadow-xl">
+            <footer className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-amber-800 text-xs font-medium flex flex-col items-center text-center gap-1 bg-white/30 backdrop-blur-md rounded-xl px-6 py-3 shadow-lg border border-amber-200/60 transition-all duration-300 hover:bg-white/40 hover:shadow-xl focus:outline-none focus:ring-0 focus:border-b">
                 <span className="font-serif text-sm tracking-wide text-nowrap">
                     © 2025 Retro Camera
                 </span>
                 <span className="font-serif text-xs">
                     Designed by{" "}
                     <a
-                        href="https://rohitkhatri.vercel.app/"
+                        href="https://thisisrohit.dev"
                         target="_blank"
                         rel="noreferrer"
                         className="text-amber-900 hover:text-amber-700 underline decoration-amber-400 decoration-2 underline-offset-2 hover:decoration-amber-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 rounded-sm"

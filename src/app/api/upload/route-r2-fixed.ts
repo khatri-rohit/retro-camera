@@ -126,7 +126,7 @@ export async function POST(req: NextRequest) {
 
     // ✅ Get Cloudflare bindings - PROPER WAY
     const { env } = getCloudflareContext();
-    console.log(env);
+
     if (!env.retro_camera_photos) {
       console.error("R2 bucket binding not available");
       return NextResponse.json(
@@ -173,7 +173,7 @@ export async function POST(req: NextRequest) {
 
     // ✅ Construct public URL using R2_PUBLIC_URL
     const r2PublicUrl = env.R2_PUBLIC_URL || process.env.R2_PUBLIC_URL;
-    console.log(r2PublicUrl);
+
     if (!r2PublicUrl) {
       console.error("R2_PUBLIC_URL not configured");
       return NextResponse.json(

@@ -7,21 +7,25 @@ This project has been successfully migrated from Firebase to Cloudflare Workers.
 ## Changes Made
 
 ### 1. **Storage Migration**
+
 - **From:** Firebase Storage
 - **To:** Cloudflare R2
 - Files are now stored in Cloudflare R2 bucket
 
 ### 2. **Database Migration**
+
 - **From:** Firestore
 - **To:** Cloudflare D1 (SQLite)
 - New schema created in `schema.sql`
 
 ### 3. **AI Image Processing**
+
 - **From:** Firebase AI SDK (Gemini via Firebase)
 - **To:** Direct Google Gemini API calls
 - Updated to use `NEXT_PUBLIC_GEMINI_API_KEY`
 
 ### 4. **Deployment Platform**
+
 - **From:** Firebase Hosting/Cloud Functions
 - **To:** Cloudflare Workers/Pages
 - Using OpenNext adapter for Next.js on Cloudflare
@@ -29,6 +33,7 @@ This project has been successfully migrated from Firebase to Cloudflare Workers.
 ## Setup Instructions
 
 ### 1. Install Dependencies
+
 ```bash
 npm install
 ```
@@ -36,10 +41,13 @@ npm install
 ### 2. Set Up Cloudflare Resources
 
 #### Create D1 Database
+
 ```bash
 npx wrangler d1 create retro-camera-db
 ```
+
 Copy the database ID from the output and update `wrangler.json`:
+
 ```json
 "d1_databases": [
   {
@@ -51,17 +59,21 @@ Copy the database ID from the output and update `wrangler.json`:
 ```
 
 #### Initialize Database Schema
+
 ```bash
 npx wrangler d1 execute retro-camera-db --file=./schema.sql
 ```
 
 #### Create R2 Bucket
+
 ```bash
 npx wrangler r2 bucket create retro-camera-photos
 ```
 
 #### Configure R2 Public Access (Optional)
+
 You can enable public access to your R2 bucket:
+
 1. Go to Cloudflare Dashboard
 2. Navigate to R2
 3. Select your bucket
@@ -73,6 +85,7 @@ Alternatively, you can use custom domains for R2.
 ### 3. Set Environment Variables
 
 #### For Development (.env.local)
+
 ```bash
 NEXT_PUBLIC_GEMINI_API_KEY=your-gemini-api-key
 ```
@@ -80,7 +93,9 @@ NEXT_PUBLIC_GEMINI_API_KEY=your-gemini-api-key
 Get your Gemini API key from: https://aistudio.google.com/app/apikey
 
 #### For Production (Cloudflare)
+
 Set via wrangler CLI:
+
 ```bash
 npx wrangler secret put NEXT_PUBLIC_GEMINI_API_KEY
 ```
@@ -90,6 +105,7 @@ Or set in Cloudflare Dashboard under Workers & Pages > Your Project > Settings >
 ### 4. Development
 
 Run Next.js development server:
+
 ```bash
 npm run dev
 ```
@@ -97,6 +113,7 @@ npm run dev
 ### 5. Test with Cloudflare Adapter
 
 Preview with Cloudflare Workers runtime:
+
 ```bash
 npm run preview
 ```
@@ -108,6 +125,7 @@ npm run deploy
 ```
 
 Or use Cloudflare's Git integration:
+
 1. Connect your Git repository to Cloudflare Pages
 2. Set build command: `npm run deploy`
 3. Enable automatic deployments
