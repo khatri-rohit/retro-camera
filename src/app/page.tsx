@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { Camera, Images, SwitchCamera } from "lucide-react";
 import PhotoCard from "../../components/PhotoCard";
-import { editCapturedPhoto } from "./firebaseGetImage";
+import { editCapturedPhoto } from "./geminiImageEdit";
 import FilterSlider from "../../components/FilterSilder";
 import { availableFilters } from "../../components/Filters";
 import { domToPng } from "modern-screenshot";

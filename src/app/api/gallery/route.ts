@@ -1,36 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import * as admin from "firebase-admin";
-import { getFirestore } from "firebase-admin/firestore";
 import { NextRequest, NextResponse } from "next/server";
 import { getUserIP } from "@/utils/ip";
 import { RateLimiterMemory } from "rate-limiter-flexible";
-
-const serviceAccount = {
-  projectId: process.env.GOOGLE_APPLICATION_CREDENTIALS_PROJECT_ID as string,
-  privateKey: (
-    process.env.GOOGLE_APPLICATION_CREDENTIALS_PRIVATE_KEY as string
-  ).replace(/\\n/g, "\n"),
-  clientEmail: process.env
-    .GOOGLE_APPLICATION_CREDENTIALS_CLIENT_EMAIL as string,
-  privateKeyId: process.env
-    .GOOGLE_APPLICATION_CREDENTIALS_PRIVATE_KEY_ID as string,
-  clientId: process.env.GOOGLE_APPLICATION_CREDENTIALS_CLIENT_ID as string,
-  authUri: process.env.GOOGLE_APPLICATION_CREDENTIALS_AUTH_URI as string,
-  tokenUri: process.env.GOOGLE_APPLICATION_CREDENTIALS_TOKEN_URI as string,
-  authProviderX509CertUrl: process.env
-    .GOOGLE_APPLICATION_CREDENTIALS_AUTH_PROVIDER_X509_CERT_URL as string,
-  clientX509CertUrl: process.env
-    .GOOGLE_APPLICATION_CREDENTIALS_CLIENT_X509_CERT_URL as string,
-};
-
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-    storageBucket: process.env.FIREBASE_STORAGE_BUCKET as string,
-  });
-}
-
-const db = getFirestore();
+import type { CloudflareEnv } from "../../../../cloudflare-env";
 
 const opts = {
   points: 100, // 100 points
@@ -68,38 +40,43 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const photos = await db
-      .collection("photos")
-      .orderBy("createdAt", "desc")
-      .limit(50)
-      .get();
+    // Get Cloudflare bindings
+    const env = process.env as unknown as CloudflareEnv;
+    
+    // Query Cloudflare D1
+    const result = await env.DB.prepare(
+      `SELECT id, imageUrl, message, positionX, positionY, rotation, createdAt 
+       FROM photos 
+       ORDER BY createdAt DESC 
+       LIMIT 50`
+    ).all();
 
-    const validatedData = photos.docs
-      .map((doc) => {
-        const data = doc.data();
+    const validatedData = result.results
+      .map((row: any) => {
         // Validate required fields
         if (
-          !data.id ||
-          !data.imageUrl ||
-          // !data.message ||
-          // !data.position ||
-          typeof data.rotation !== "number"
+          !row.id ||
+          !row.imageUrl ||
+          typeof row.rotation !== "number"
         ) {
-          console.warn(`Invalid photo data for doc ${doc.id}, skipping`);
+          console.warn(`Invalid photo data for id ${row.id}, skipping`);
           return null;
         }
         const sanitizedMessage =
-          typeof data.message === "string"
-            ? data.message.substring(0, 500)
+          typeof row.message === "string"
+            ? row.message.substring(0, 500)
             : "";
 
         return {
-          id: doc.id,
-          imageUrl: data.imageUrl,
+          id: row.id,
+          imageUrl: row.imageUrl,
           message: sanitizedMessage,
-          position: data.position,
-          rotation: data.rotation,
-          createdAt: data.createdAt,
+          position: {
+            x: row.positionX,
+            y: row.positionY,
+          },
+          rotation: row.rotation,
+          createdAt: row.createdAt,
         };
       })
       .filter(Boolean);

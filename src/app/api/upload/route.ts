@@ -1,10 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 // app/api/upload/route.ts
 import { getUserIP } from "@/utils/ip";
-import * as admin from "firebase-admin";
-import { getFirestore } from "firebase-admin/firestore";
 import { NextRequest, NextResponse } from "next/server";
 import { RateLimiterMemory } from "rate-limiter-flexible";
+import type { CloudflareEnv } from "../../../../cloudflare-env";
 
 // Simple sanitization function (no JSDOM needed)
 function sanitizeMessage(message: string): string {
@@ -16,34 +15,6 @@ function sanitizeMessage(message: string): string {
     .trim()
     .substring(0, 500); // Max 500 chars
 }
-
-const serviceAccount = {
-  projectId: process.env.GOOGLE_APPLICATION_CREDENTIALS_PROJECT_ID as string,
-  privateKey: (
-    process.env.GOOGLE_APPLICATION_CREDENTIALS_PRIVATE_KEY as string
-  ).replace(/\\n/g, "\n"),
-  clientEmail: process.env
-    .GOOGLE_APPLICATION_CREDENTIALS_CLIENT_EMAIL as string,
-  privateKeyId: process.env
-    .GOOGLE_APPLICATION_CREDENTIALS_PRIVATE_KEY_ID as string,
-  clientId: process.env.GOOGLE_APPLICATION_CREDENTIALS_CLIENT_ID as string,
-  authUri: process.env.GOOGLE_APPLICATION_CREDENTIALS_AUTH_URI as string,
-  tokenUri: process.env.GOOGLE_APPLICATION_CREDENTIALS_TOKEN_URI as string,
-  authProviderX509CertUrl: process.env
-    .GOOGLE_APPLICATION_CREDENTIALS_AUTH_PROVIDER_X509_CERT_URL as string,
-  clientX509CertUrl: process.env
-    .GOOGLE_APPLICATION_CREDENTIALS_CLIENT_X509_CERT_URL as string,
-};
-
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-    storageBucket: process.env.FIREBASE_STORAGE_BUCKET as string,
-  });
-}
-
-const storage = admin.storage().bucket();
-const db = getFirestore();
 
 const rateLimiter = new RateLimiterMemory({
   points: 20,
@@ -157,34 +128,38 @@ export async function POST(req: NextRequest) {
     const buffer = Buffer.from(bytes);
 
     const filename = `photos/${photo.id}-${Date.now()}.jpg`;
-    const fileRef = storage.file(filename);
 
-    // Upload to Firebase Storage
-    await fileRef.save(buffer, {
-      metadata: {
+    // Get Cloudflare bindings
+    const env = process.env as unknown as CloudflareEnv;
+    
+    // Upload to Cloudflare R2
+    await env.PHOTO_BUCKET.put(filename, buffer, {
+      httpMetadata: {
         contentType: file.type,
-        metadata: {
-          photoId: photo.id,
-          uploadedAt: new Date().toISOString(),
-        },
+      },
+      customMetadata: {
+        photoId: photo.id,
+        uploadedAt: new Date().toISOString(),
       },
     });
 
-    await fileRef.makePublic();
+    // Construct public URL (adjust based on your R2 bucket public URL configuration)
+    const publicUrl = `https://pub-YOUR-BUCKET-ID.r2.dev/${filename}`;
 
-    const publicUrl = `https://storage.googleapis.com/${storage.name}/${filename}`;
-
-    // Save to Firestore
-    const photoRef = db.collection("photos").doc(photo.id);
-
-    await photoRef.set({
-      id: photo.id,
-      imageUrl: publicUrl,
-      message: sanitizedMessage,
-      position: photo.position,
-      rotation: photo.rotation,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
+    // Save to Cloudflare D1
+    const createdAt = Date.now();
+    await env.DB.prepare(
+      `INSERT INTO photos (id, imageUrl, message, positionX, positionY, rotation, createdAt) 
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
+    ).bind(
+      photo.id,
+      publicUrl,
+      sanitizedMessage,
+      photo.position.x,
+      photo.position.y,
+      photo.rotation,
+      createdAt
+    ).run();
 
     console.log("Upload successful:", photo.id);
 
